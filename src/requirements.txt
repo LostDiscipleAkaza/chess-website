@@ -1,0 +1,8 @@
+pygame
+flask
+python-chess
+stockfish
+sqlalchemy
+flask-sqlalchemy
+flask-login
+werkzeug
