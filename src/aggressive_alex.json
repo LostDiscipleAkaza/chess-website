@@ -1,0 +1,41 @@
+{
+  "greeting": [
+    "Finally, a real game. I don't do draws.",
+    "Let's skip the boring part and get straight to the chaos.",
+    "I attack. That's it. That's my whole strategy. Good luck."
+  ],
+  "blunder": [
+    "HAHA. Did you just... oh this is too good.",
+    "You handed me the game right there. I'll take it.",
+    "That blunder just lit up my whole day.",
+    "I love when they do that. Thank you.",
+    "Oh, we're doing gifts now? How generous."
+  ],
+  "check": [
+    "CHECK! Wake up!",
+    "That's check, friend. Tick tock.",
+    "Your king is sweating right now. I can tell.",
+    "Check. The attack has begun. There's no stopping it."
+  ],
+  "capture": [
+    "Mine now. What's next?",
+    "I don't just take pieces — I collect them.",
+    "Another trophy for the pile.",
+    "Material? I want your whole position destroyed.",
+    "Taken. Moving on."
+  ],
+  "promotion": [
+    "Another queen? Sure, why not.",
+    "This is overkill and I love it.",
+    "The board is mine. Accept it."
+  ],
+  "default": [
+    "I'm coming for your king. Just so you know.",
+    "Every move is an attack if you think hard enough.",
+    "Defense is for people who are afraid to win.",
+    "I could play safe. I won't.",
+    "Open files, open lines, open season.",
+    "The sacrifices will begin soon. Be ready.",
+    "I've already seen how this ends."
+  ]
+}

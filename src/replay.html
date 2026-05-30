@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Replay — ChessBot{% endblock %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+{% endblock %}
+
+{% block content %}
+<div class="replay-page">
+  <h1>Game Replay</h1>
+  <p class="replay-meta">
+    {{ game.played_at.strftime('%B %d, %Y') }} &mdash;
+    {{ game.mode.replace('_', ' ').title() }}
+    {% if game.bot_name %}vs {{ game.bot_name }}{% endif %}
+    &mdash; Result: <strong>{{ game.result }}</strong>
+  </p>
+
+  <div class="replay-layout">
+    <div id="replay-board"></div>
+
+    <div class="replay-controls">
+      <div class="move-history">
+        <ol id="replay-moves"></ol>
+      </div>
+      <div class="replay-buttons">
+        <button id="btn-start"  class="btn-outline">⏮</button>
+        <button id="btn-prev"   class="btn-outline">◀</button>
+        <button id="btn-next"   class="btn-outline">▶</button>
+        <button id="btn-end"    class="btn-outline">⏭</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+<script>
+  const PGN = {{ game.pgn | tojson }};
+  const chess = new Chess();
+  chess.load_pgn(PGN);
+  const history = chess.history({ verbose: true });
+
+  // Rebuild positions array
+  const positions = (() => {
+    const c = new Chess();
+    const arr = [c.fen()];
+    for (const move of history) { c.move(move); arr.push(c.fen()); }
+    return arr;
+  })();
+
+  let cursor = 0;
+
+  const board = Chessboard('replay-board', {
+    position: positions[0],
+    orientation: "{{ game.player_color }}",
+  });
+
+  // Populate move list
+  const moveListEl = document.getElementById('replay-moves');
+  history.forEach((m, i) => {
+    const li = document.createElement('li');
+    li.textContent = m.san;
+    li.dataset.idx = i + 1;
+    li.onclick = () => { cursor = i + 1; render(); };
+    moveListEl.appendChild(li);
+  });
+
+  function render() {
+    board.position(positions[cursor], false);
+    document.querySelectorAll('#replay-moves li').forEach((li, i) => {
+      li.classList.toggle('active', i + 1 === cursor);
+    });
+  }
+
+  document.getElementById('btn-start').onclick = () => { cursor = 0; render(); };
+  document.getElementById('btn-end').onclick   = () => { cursor = positions.length - 1; render(); };
+  document.getElementById('btn-prev').onclick  = () => { if (cursor > 0) cursor--; render(); };
+  document.getElementById('btn-next').onclick  = () => { if (cursor < positions.length - 1) cursor++; render(); };
+</script>
+{% endblock %}

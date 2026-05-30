@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}History — ChessBot{% endblock %}
+
+{% block content %}
+<div class="history-page">
+  <h1>Game History</h1>
+  {% if games.items %}
+  <table class="games-table">
+    <thead>
+      <tr><th>Date</th><th>Mode</th><th>Opponent</th><th>Color</th><th>Result</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for game in games.items %}
+      <tr>
+        <td>{{ game.played_at.strftime('%b %d, %Y %H:%M') }}</td>
+        <td>{{ game.mode.replace('_', ' ').title() }}</td>
+        <td>{{ game.bot_name or '—' }}</td>
+        <td>{{ game.player_color.title() }}</td>
+        <td class="result result-{{ game.result }}">{{ game.result }}</td>
+        <td><a href="{{ url_for('game.replay', game_id=game.id) }}">Replay</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    {% if games.has_prev %}
+      <a href="{{ url_for('game.history', page=games.prev_num) }}" class="btn-outline">← Prev</a>
+    {% endif %}
+    <span>Page {{ games.page }} of {{ games.pages }}</span>
+    {% if games.has_next %}
+      <a href="{{ url_for('game.history', page=games.next_num) }}" class="btn-outline">Next →</a>
+    {% endif %}
+  </div>
+  {% else %}
+    <p class="empty-state">No games saved yet. <a href="{{ url_for('game.dashboard') }}">Play one!</a></p>
+  {% endif %}
+</div>
+{% endblock %}

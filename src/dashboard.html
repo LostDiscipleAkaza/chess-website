@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — ChessBot{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <header class="dash-header">
+    <h1>Welcome back, <span class="accent">{{ current_user.username }}</span></h1>
+    <p>Choose a mode to start playing.</p>
+  </header>
+
+  <section class="mode-cards">
+    <div class="mode-card">
+      <div class="mode-icon">🤝</div>
+      <h2>Pass &amp; Play</h2>
+      <p>Two players, one board. Take turns on the same device.</p>
+      <a href="{{ url_for('game.play', mode='pass_and_play') }}" class="btn-primary">Play Now</a>
+    </div>
+
+    <div class="mode-card">
+      <div class="mode-icon">🤖</div>
+      <h2>Bot Battler</h2>
+      <p>Challenge one of our personality-driven AI opponents.</p>
+      <a href="#bot-select" class="btn-primary">Choose Bot</a>
+    </div>
+  </section>
+
+  <section class="bot-select" id="bot-select">
+    <h2>Select Your Opponent</h2>
+    <div class="bot-grid" id="bot-grid">
+      <p class="loading-text">Loading bots...</p>
+    </div>
+  </section>
+
+  {% if games %}
+  <section class="recent-games">
+    <h2>Recent Games</h2>
+    <table class="games-table">
+      <thead>
+        <tr><th>Date</th><th>Mode</th><th>Opponent</th><th>Result</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for game in games %}
+        <tr>
+          <td>{{ game.played_at.strftime('%b %d, %Y') }}</td>
+          <td>{{ game.mode.replace('_', ' ').title() }}</td>
+          <td>{{ game.bot_name or '—' }}</td>
+          <td class="result result-{{ game.result }}">{{ game.result }}</td>
+          <td><a href="{{ url_for('game.replay', game_id=game.id) }}">Replay</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  fetch('/api/bots')
+    .then(r => r.json())
+    .then(bots => {
+      const grid = document.getElementById('bot-grid');
+      grid.innerHTML = bots.map(bot => `
+        <div class="bot-card">
+          <div class="bot-avatar">${bot.avatar}</div>
+          <h3>${bot.name}</h3>
+          <p class="bot-elo">Elo ~${bot.elo}</p>
+          <p class="bot-desc">${bot.description}</p>
+          <div class="bot-actions">
+            <a href="/play?mode=bot&bot=${bot.id}&color=white" class="btn-sm">Play as White</a>
+            <a href="/play?mode=bot&bot=${bot.id}&color=black" class="btn-sm btn-outline">Play as Black</a>
+          </div>
+        </div>
+      `).join('');
+    });
+</script>
+{% endblock %}

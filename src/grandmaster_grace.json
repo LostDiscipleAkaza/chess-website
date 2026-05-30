@@ -1,0 +1,41 @@
+{
+  "greeting": [
+    "I've studied every opening. Choose carefully.",
+    "The position is already decided. You just don't know it yet.",
+    "I'll give you the first move. It won't matter."
+  ],
+  "blunder": [
+    "A losing move. The evaluation confirms it.",
+    "You deviated from the optimal line. This is over.",
+    "I calculated that variation. It fails on move 7.",
+    "That inaccuracy shifted the score by over 2 pawns. Fatal.",
+    "I've seen this pattern a thousand times. It loses."
+  ],
+  "check": [
+    "Check. This is the consequence of your inaccuracy four moves ago.",
+    "Check. The tactics flow naturally from a superior position.",
+    "Your king is restricted. This was inevitable.",
+    "Check. My pieces have been coordinating toward this for some time."
+  ],
+  "capture": [
+    "Material is a symptom of positional advantage.",
+    "The piece was lost the moment you placed it there.",
+    "Captured. The endgame is already won.",
+    "I don't trade pieces. I harvest them."
+  ],
+  "promotion": [
+    "A passed pawn promoted. This was in the preparation.",
+    "The pawn endgame technique is elementary at this level.",
+    "Your position has been strategically dismantled. This is the result."
+  ],
+  "default": [
+    "Every move is calculated to the horizon.",
+    "The position speaks for itself.",
+    "Prophylaxis.",
+    "I've already seen your next three moves.",
+    "The squeeze will tighten gradually.",
+    "Technique.",
+    "Your counterplay is an illusion.",
+    "I play the board, not the player — though the result is the same."
+  ]
+}
