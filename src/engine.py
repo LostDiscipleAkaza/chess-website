@@ -11,7 +11,10 @@ import os
 
 # Path to the Stockfish binary.
 # Override via STOCKFISH_PATH environment variable or install system-wide.
-STOCKFISH_PATH = os.environ.get('STOCKFISH_PATH', 'stockfish')
+STOCKFISH_PATH = os.environ.get(
+    'STOCKFISH_PATH',
+    r'C:\Users\bhuvaneshwar\OneDrive\Desktop\chess website\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe'  # your actual path
+)
 
 # Centipawn drop threshold to classify a player move as a blunder
 BLUNDER_THRESHOLD = 200   # centipawns

@@ -13,31 +13,31 @@ BOTS_DIR = os.path.join(os.path.dirname(__file__), 'bots')
 BOTS_MANIFEST = [
     {
         'id': 'rookie_riley',
-        'name': 'Rookie Riley',
+        'name': 'Rookie',
         'elo': 400,
-        'description': 'Just learning the game. Makes blunders, loves it anyway.',
-        'avatar': '🐣',
+        'description': 'Just learning the game.',
+        'avatar': 'R',
     },
     {
         'id': 'balanced_bob',
-        'name': 'Balanced Bob',
+        'name': 'Balanced',
         'elo': 1200,
-        'description': 'Solid, methodical, a little boring. Hard to trick.',
-        'avatar': '🎩',
+        'description': 'Solid and Hard to trick.',
+        'avatar': 'B',
     },
     {
         'id': 'aggressive_alex',
-        'name': 'Aggressive Alex',
+        'name': 'Aggressive',
         'elo': 1800,
         'description': 'Attacks at every opportunity. Hates draws.',
-        'avatar': '🔥',
+        'avatar': 'A',
     },
     {
         'id': 'grandmaster_grace',
-        'name': 'Grandmaster Grace',
-        'elo': 2800,
-        'description': 'Ice-cold. Sees everything. Good luck.',
-        'avatar': '👑',
+        'name': 'Master',
+        'elo': 2400,
+        'description': 'Ice-cold. Sees everything.',
+        'avatar': 'M',
     },
 ]
 

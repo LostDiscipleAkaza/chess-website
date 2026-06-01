@@ -1,0 +1,529 @@
+{% extends 'base.html' %}
+{% block title %}Review — ChessBot{% endblock %}
+
+{% block head %}
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+<style>
+  .review-layout {
+    display: grid;
+    grid-template-columns: 180px auto 280px;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    align-items: start;
+    min-height: calc(100vh - 56px);
+  }
+
+  /* Eval bar */
+  .eval-col { display: flex; flex-direction: column; align-items: center; gap: .4rem; padding-top: 2.5rem; }
+  .eval-bar-wrap {
+    width: 20px; height: 480px;
+    background: #ca3431;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border);
+  }
+  .eval-bar-white {
+    position: absolute; bottom: 0; width: 100%;
+    background: #f0ece4;
+    transition: height .4s ease;
+    height: 50%;
+  }
+  .eval-score-top, .eval-score-bot {
+    font-size: .7rem; color: var(--muted);
+    font-family: var(--font-mono);
+    text-align: center;
+  }
+
+  /* Board col */
+  .board-col { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+  #replay-board { width: 480px !important; }
+
+  /* Nav controls */
+  .replay-nav {
+    display: flex; gap: .4rem; align-items: center;
+  }
+  .replay-nav button {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: var(--radius);
+    padding: .4rem .8rem; cursor: pointer; font-size: .85rem;
+    transition: border-color .15s;
+  }
+  .replay-nav button:hover { border-color: var(--accent); color: var(--accent); }
+  .replay-nav .move-indicator {
+    font-size: .8rem; color: var(--muted);
+    font-family: var(--font-mono); min-width: 60px; text-align: center;
+  }
+
+  /* Right panel */
+  .review-panel { display: flex; flex-direction: column; gap: .75rem; }
+
+  .panel-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .panel-head {
+    padding: .6rem .9rem;
+    border-bottom: 1px solid var(--border);
+    font-size: .72rem; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .08em;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* Accuracy bars */
+  .accuracy-section { padding: .9rem; }
+  .acc-row { margin-bottom: .9rem; }
+  .acc-label {
+    display: flex; justify-content: space-between;
+    font-size: .78rem; margin-bottom: .3rem;
+  }
+  .acc-label span:first-child { color: var(--text2); font-weight: 500; }
+  .acc-label span:last-child { color: var(--accent); font-weight: 700; }
+  .acc-bar-bg {
+    height: 6px; background: var(--surface2);
+    border-radius: 3px; overflow: hidden;
+  }
+  .acc-bar-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width .6s ease;
+  }
+
+  /* Classification counts */
+  .class-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1px; background: var(--border);
+  }
+  .class-cell {
+    background: var(--surface); padding: .6rem .75rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .class-sym { font-size: .9rem; font-weight: 700; min-width: 22px; text-align: center; }
+  .class-info { flex: 1; }
+  .class-name { font-size: .72rem; color: var(--muted); }
+  .class-counts { font-size: .82rem; font-weight: 600; }
+  .class-w { color: var(--text); }
+  .class-b { color: var(--text2); }
+
+  /* Move list */
+  .move-scroll { max-height: 220px; overflow-y: auto; padding: .4rem; }
+  .move-pair-row {
+    display: grid; grid-template-columns: 24px 1fr 1fr;
+    gap: 2px; margin-bottom: 1px;
+  }
+  .mpair-num { font-size: .72rem; color: var(--muted); padding: .3rem .2rem; line-height: 1.4; }
+  .mpair-move {
+    font-size: .78rem; padding: .28rem .4rem;
+    border-radius: 3px; cursor: pointer;
+    font-family: var(--font-mono); color: var(--text2);
+    transition: background .1s;
+    display: flex; align-items: center; gap: .25rem;
+    line-height: 1.3;
+  }
+  .mpair-move:hover { background: var(--surface2); color: var(--text); }
+  .mpair-move.active { background: var(--accent-dim); color: var(--accent); }
+  .move-cls-sym { font-size: .7rem; }
+
+  /* Review button */
+  .review-btn-wrap { padding: .6rem; }
+
+  /* Loader */
+  .review-loader {
+    padding: 1.2rem; text-align: center;
+    color: var(--muted); font-size: .82rem;
+  }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
+    margin-right: .4rem; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Rating change toast */
+  .rating-toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: .9rem 1.2rem;
+    font-size: .85rem; z-index: 999;
+    animation: slideUp .3s ease;
+    display: none;
+  }
+  .rating-toast.show { display: block; }
+  @keyframes slideUp { from { opacity:0; transform: translateY(10px); } to { opacity:1; } }
+  .rating-val { font-size: 1.3rem; font-weight: 700; color: var(--accent); }
+  .rating-change-pos { color: var(--success); }
+  .rating-change-neg { color: var(--danger); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-layout">
+
+  <!-- Eval bar column -->
+  <div class="eval-col">
+    <div class="eval-score-top" id="eval-top">+0.0</div>
+    <div class="eval-bar-wrap">
+      <div class="eval-bar-white" id="eval-bar" style="height:50%"></div>
+    </div>
+    <div class="eval-score-bot" id="eval-bot">+0.0</div>
+    <div style="font-size:.65rem;color:var(--muted);text-align:center;margin-top:.3rem">
+      White<br>▲
+    </div>
+  </div>
+
+  <!-- Board column -->
+  <div class="board-col">
+    <div style="font-size:.82rem;color:var(--muted)">
+      {{ game.played_at.strftime('%b %d, %Y') }} ·
+      {{ game.mode.replace('_',' ').title() }}
+      {% if game.bot_name %} · vs {{ game.bot_name }}{% endif %}
+      · <strong>{{ game.result }}</strong>
+    </div>
+
+    <div id="replay-board"></div>
+
+    <div class="replay-nav">
+      <button onclick="goTo(0)">⏮</button>
+      <button onclick="step(-1)">◀</button>
+      <span class="move-indicator" id="move-indicator">Start</span>
+      <button onclick="step(1)">▶</button>
+      <button onclick="goTo(positions.length-1)">⏭</button>
+    </div>
+
+    <!-- Move classification highlight -->
+    <div id="move-classification" style="height:22px;font-size:.82rem;color:var(--muted);text-align:center"></div>
+  </div>
+
+  <!-- Right review panel -->
+  <div class="review-panel">
+
+    <!-- Accuracy -->
+    <div class="panel-box">
+      <div class="panel-head">Accuracy</div>
+      <div class="accuracy-section" id="accuracy-section">
+        <div class="review-loader" id="acc-loader">
+          Click "Analyse Game" to review
+        </div>
+        <div id="acc-content" style="display:none">
+          <div class="acc-row">
+            <div class="acc-label">
+              <span>White</span>
+              <span id="white-acc">—</span>
+            </div>
+            <div class="acc-bar-bg">
+              <div class="acc-bar-fill" id="white-acc-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="acc-row">
+            <div class="acc-label">
+              <span>Black</span>
+              <span id="black-acc">—</span>
+            </div>
+            <div class="acc-bar-bg">
+              <div class="acc-bar-fill" id="black-acc-bar" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Move classifications summary -->
+    <div class="panel-box" id="class-panel" style="display:none">
+      <div class="panel-head">
+        Move Quality
+        <span style="font-size:.68rem">W / B</span>
+      </div>
+      <div class="class-grid" id="class-grid"></div>
+    </div>
+
+    <!-- Move list -->
+    <div class="panel-box">
+      <div class="panel-head">Moves</div>
+      <div class="move-scroll" id="move-list-inner">
+        <div style="color:var(--muted);font-size:.78rem;padding:.5rem">Loading moves...</div>
+      </div>
+    </div>
+
+    <!-- Analyse button -->
+    <div class="panel-box">
+      <div class="review-btn-wrap">
+        <button id="analyse-btn" onclick="analyseGame()"
+          class="btn btn-primary btn-full">
+          Analyse Game
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Rating toast -->
+<div class="rating-toast" id="rating-toast">
+  <div style="color:var(--muted);font-size:.72rem;margin-bottom:.2rem">Rating updated</div>
+  <div class="rating-val" id="toast-rating">1200</div>
+  <div id="toast-change" style="font-size:.78rem"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+<script>
+const PGN          = {{ game.pgn | tojson }};
+const PLAYER_COLOR = "{{ game.player_color }}";
+const PIECE_THEME  = 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png';
+
+// Build positions array from PGN
+const chess = new Chess();
+chess.load_pgn(PGN);
+const fullHistory = chess.history({ verbose: true });
+
+const positions = (() => {
+  const c = new Chess();
+  const arr = [{ fen: c.fen(), eval: null }];
+  for (const move of fullHistory) {
+    c.move(move);
+    arr.push({ fen: c.fen(), eval: null });
+  }
+  return arr;
+})();
+
+let cursor = 0;
+let reviewData = null; // populated after analysis
+
+const board = Chessboard('replay-board', {
+  position: positions[0].fen,
+  orientation: PLAYER_COLOR,
+  pieceTheme: PIECE_THEME,
+});
+
+// ── Navigation ────────────────────────────────────────────────
+function goTo(idx) {
+  cursor = Math.max(0, Math.min(idx, positions.length - 1));
+  render();
+}
+
+function step(dir) { goTo(cursor + dir); }
+
+function render() {
+  board.position(positions[cursor].fen, false);
+  updateMoveIndicator();
+  updateEvalBar();
+  updateMoveHighlight();
+  highlightActiveMove();
+}
+
+function updateMoveIndicator() {
+  if (cursor === 0) {
+    document.getElementById('move-indicator').textContent = 'Start';
+  } else {
+    const moveIdx = cursor - 1;
+    const moveNum = Math.floor(moveIdx / 2) + 1;
+    const color   = moveIdx % 2 === 0 ? 'W' : 'B';
+    document.getElementById('move-indicator').textContent = `${moveNum}. ${color}`;
+  }
+}
+
+function updateEvalBar() {
+  if (!reviewData || cursor === 0) {
+    setEvalBar(0);
+    return;
+  }
+  const moveIdx = cursor - 1;
+  const m = reviewData.moves[moveIdx];
+  if (!m) return;
+  const cp = m.eval_after;
+  setEvalBar(cp);
+}
+
+function setEvalBar(cp) {
+  const bar   = document.getElementById('eval-bar');
+  const top   = document.getElementById('eval-top');
+  const bot   = document.getElementById('eval-bot');
+
+  if (cp === null || cp === undefined) {
+    bar.style.height = '50%';
+    top.textContent  = '';
+    bot.textContent  = '';
+    return;
+  }
+
+  const clamped = Math.max(-1000, Math.min(1000, cp));
+  const pct     = 50 + (clamped / 1000) * 45;
+  bar.style.height = pct + '%';
+
+  const display = cp >= 0
+    ? '+' + (cp / 100).toFixed(1)
+    : (cp / 100).toFixed(1);
+
+  if (cp >= 0) {
+    top.textContent = '';
+    bot.textContent = display;
+    document.getElementById('eval-top').style.color = 'var(--muted)';
+  } else {
+    top.textContent = display;
+    bot.textContent = '';
+  }
+}
+
+function updateMoveHighlight() {
+  const el = document.getElementById('move-classification');
+  if (!reviewData || cursor === 0) { el.textContent = ''; return; }
+  const m = reviewData.moves[cursor - 1];
+  if (!m) { el.textContent = ''; return; }
+  el.innerHTML = `<span style="color:${m.color_hex};font-weight:700">${m.symbol} ${m.classification.charAt(0).toUpperCase()+m.classification.slice(1)}</span>`;
+}
+
+function highlightActiveMove() {
+  document.querySelectorAll('.mpair-move').forEach(el => el.classList.remove('active'));
+  if (cursor > 0) {
+    const activeEl = document.querySelector(`[data-move-idx="${cursor-1}"]`);
+    if (activeEl) {
+      activeEl.classList.add('active');
+      activeEl.scrollIntoView({ block: 'nearest' });
+    }
+  }
+}
+
+// ── Move list ─────────────────────────────────────────────────
+function renderMoveList(withClassifications) {
+  const inner = document.getElementById('move-list-inner');
+  let html = '';
+
+  for (let i = 0; i < fullHistory.length; i += 2) {
+    const num  = Math.floor(i / 2) + 1;
+    const wMove = fullHistory[i];
+    const bMove = fullHistory[i + 1];
+
+    const wCls = withClassifications && reviewData
+      ? reviewData.moves[i] : null;
+    const bCls = withClassifications && reviewData && fullHistory[i+1]
+      ? reviewData.moves[i + 1] : null;
+
+    const wSym = wCls ? `<span class="move-cls-sym" style="color:${wCls.color_hex}">${wCls.symbol}</span>` : '';
+    const bSym = bCls ? `<span class="move-cls-sym" style="color:${bCls.color_hex}">${bCls.symbol}</span>` : '';
+
+    html += `<div class="move-pair-row">
+      <span class="mpair-num">${num}.</span>
+      <span class="mpair-move" data-move-idx="${i}"
+        onclick="goTo(${i+1})">${wSym}${wMove ? wMove.san : ''}</span>
+      <span class="mpair-move" data-move-idx="${i+1}"
+        onclick="goTo(${i+2})">${bSym}${bMove ? bMove.san : ''}</span>
+    </div>`;
+  }
+
+  inner.innerHTML = html || '<div style="color:var(--muted);font-size:.78rem;padding:.5rem">No moves</div>';
+  highlightActiveMove();
+}
+
+// Initial move list without classifications
+renderMoveList(false);
+
+// ── Analysis ──────────────────────────────────────────────────
+function analyseGame() {
+  const btn = document.getElementById('analyse-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analysing...';
+
+  document.getElementById('acc-loader').innerHTML =
+    '<span class="spinner"></span>Running Stockfish on all positions...';
+
+  fetch('/api/review', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+    pgn:          PGN,
+    player_color: PLAYER_COLOR,
+    result:       "{{ game.result }}",
+    bot_id:       "{{ game.bot_name or '' }}",
+    mode:         "{{ game.mode }}",
+}),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) {
+      document.getElementById('acc-loader').textContent = 'Error: ' + data.error;
+      btn.disabled = false;
+      btn.textContent = 'Retry Analysis';
+      return;
+    }
+
+    reviewData = data;
+
+    // Show accuracy
+    document.getElementById('acc-loader').style.display = 'none';
+    document.getElementById('acc-content').style.display = 'block';
+
+    const wa = data.white.accuracy || 0;
+    const ba = data.black.accuracy || 0;
+
+    document.getElementById('white-acc').textContent = wa.toFixed(1) + '%';
+    document.getElementById('black-acc').textContent = ba.toFixed(1) + '%';
+    document.getElementById('white-acc-bar').style.width = wa + '%';
+    document.getElementById('black-acc-bar').style.width = ba + '%';
+
+    // Show classification grid
+    showClassGrid(data.white, data.black);
+
+    // Re-render move list with symbols
+    renderMoveList(true);
+
+    // Update eval bar for current position
+    updateEvalBar();
+    updateMoveHighlight();
+
+    btn.textContent = 'Analysis Complete ✓';
+  })
+  .catch(err => {
+    document.getElementById('acc-loader').textContent = 'Failed: ' + err.message;
+    btn.disabled = false;
+    btn.textContent = 'Retry Analysis';
+  });
+}
+
+function showClassGrid(white, black) {
+  const panel = document.getElementById('class-panel');
+  const grid  = document.getElementById('class-grid');
+  panel.style.display = 'block';
+
+  const rows = [
+    { key: 'best',        sym: '★',  label: 'Best',        color: '#1bada6' },
+    { key: 'excellent',   sym: '✓',  label: 'Excellent',   color: '#96bc4b' },
+    { key: 'good',        sym: '●',  label: 'Good',        color: '#96bc4b' },
+    { key: 'inaccuracy',  sym: '?!', label: 'Inaccuracy',  color: '#f0c15f' },
+    { key: 'mistake',     sym: '?',  label: 'Mistake',     color: '#e87b2e' },
+    { key: 'blunder',     sym: '??', label: 'Blunder',     color: '#ca3431' },
+  ];
+
+  grid.innerHTML = rows.map(r => `
+    <div class="class-cell">
+      <span class="class-sym" style="color:${r.color}">${r.sym}</span>
+      <div class="class-info">
+        <div class="class-name">${r.label}</div>
+        <div class="class-counts">
+          <span class="class-w">${white[r.key] || 0}</span>
+          <span style="color:var(--border)"> / </span>
+          <span class="class-b">${black[r.key] || 0}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Keyboard nav ──────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') step(1);
+  if (e.key === 'ArrowLeft')  step(-1);
+  if (e.key === 'Home')       goTo(0);
+  if (e.key === 'End')        goTo(positions.length - 1);
+});
+
+// Initial render
+render();
+</script>
+{% endblock %}

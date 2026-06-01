@@ -1,9 +1,5 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-
-db = SQLAlchemy()
-login_manager = LoginManager()
+from extensions import db, login_manager
 
 
 def create_app():
@@ -15,10 +11,10 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
-
-    from routes.auth import auth_bp
-    from routes.game import game_bp
-    from routes.api import api_bp
+    import models
+    from auth import auth_bp
+    from routes import game_bp
+    from api import api_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
@@ -32,4 +28,6 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
+    print("user_callback =", login_manager._user_callback)
+    print("app login_manager =", login_manager)
     app.run(debug=True)

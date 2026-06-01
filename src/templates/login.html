@@ -4,7 +4,8 @@
 {% block content %}
 <div class="auth-page">
   <div class="auth-card">
-    <h1>♟ Login</h1>
+    <div class="auth-logo">♟ ChessBot</div>
+    <h1>Welcome back</h1>
     <form method="POST" action="{{ url_for('auth.login') }}">
       <div class="form-group">
         <label>Username</label>
@@ -14,9 +15,9 @@
         <label>Password</label>
         <input type="password" name="password" required autocomplete="current-password" />
       </div>
-      <button type="submit" class="btn-primary btn-full">Login</button>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem">Login</button>
     </form>
-    <p class="auth-link">No account? <a href="{{ url_for('auth.register') }}">Register</a></p>
+    <p class="auth-link">No account? <a href="{{ url_for('auth.register') }}">Register free</a></p>
   </div>
 </div>
 {% endblock %}

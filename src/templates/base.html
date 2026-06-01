@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}ChessBot{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="nav-brand" href="{{ url_for('game.dashboard') }}">ChessBot</a>
+
+  <div class="nav-center">
+    {% if current_user.is_authenticated %}
+      <a href="{{ url_for('game.dashboard') }}" class="nav-link">Home</a>
+      <a href="#" onclick="document.getElementById('mode-modal').style.display='flex'; return false;" class="nav-link">♟ Play</a>
+      <a href="{{ url_for('game.history') }}" class="nav-link">History</a>
+    {% endif %}
+  </div>
+
+  <div class="nav-right">
+    {% if current_user.is_authenticated %}
+      <span class="nav-username">
+    {{ current_user.username }}
+    <span style="color:var(--gold);font-size:.75rem;font-weight:700;margin-left:.3rem">
+        {{ current_user.rating or 1200 }}
+    </span>
+</span>
+      <div class="nav-avatar" title="{{ current_user.username }}">
+        {{ current_user.username[0].upper() }}
+      </div>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-ghost btn-sm">Logout</a>
+    {% else %}
+      <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-sm">Login</a>
+      <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">Register</a>
+    {% endif %}
+  </div>
+</nav>
+
+<main class="main-content">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash flash-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<!-- Quick Play Modal -->
+<div class="modal-overlay" id="mode-modal" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+  <div class="modal-box">
+    <h2>New Game</h2>
+    <p>Choose how you want to play</p>
+    <div class="modal-actions" style="flex-direction:column; gap:.6rem;">
+      <a href="/play?mode=pass_and_play" class="btn btn-outline btn-full">Pass &amp; Play</a>
+      <a href="/dashboard#bot-section" class="btn btn-primary btn-full">Play vs Bot</a>
+    </div>
+    <button onclick="document.getElementById('mode-modal').style.display='none'"
+            style="margin-top:1rem; background:none; border:none; color:var(--muted); cursor:pointer; font-size:.85rem;">
+      Cancel
+    </button>
+  </div>
+</div>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
