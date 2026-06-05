@@ -1,46 +1,35 @@
 """
 engine.py
-Wraps python-chess + Stockfish to:
-  - calculate the bot's best move given a FEN and bot profile
-  - detect game events (blunder, check, capture, etc.) by comparing centipawn scores
+Uses chess-api.com (free Stockfish 18) instead of a local binary.
 """
 
 import chess
-import chess.engine
-import os
+import requests
+import random
 
-# Path to the Stockfish binary.
-# Override via STOCKFISH_PATH environment variable or install system-wide.
-STOCKFISH_PATH = os.environ.get(
-    'STOCKFISH_PATH',
-    r'C:\Users\bhuvaneshwar\OneDrive\Desktop\chess website\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe'  # your actual path
-)
+API_URL = "https://chess-api.com/v1"
+BLUNDER_THRESHOLD = 200
 
-# Centipawn drop threshold to classify a player move as a blunder
-BLUNDER_THRESHOLD = 200   # centipawns
-
-
-# Bot profiles: each maps a bot_id to Stockfish UCI options + think time
 BOT_PROFILES = {
     'rookie_riley': {
-        'skill_level': 1,       # Stockfish Skill Level (0-20)
         'depth': 1,
-        'time_limit': 0.05,
+        'maxThinkingTime': 10,
+        'error_chance': 0.4,   # 40% random move = ~400 Elo feel
     },
     'balanced_bob': {
-        'skill_level': 10,
         'depth': 8,
-        'time_limit': 0.1,
+        'maxThinkingTime': 50,
+        'error_chance': 0.0,
     },
     'aggressive_alex': {
-        'skill_level': 15,
         'depth': 12,
-        'time_limit': 0.2,
+        'maxThinkingTime': 80,
+        'error_chance': 0.0,
     },
     'grandmaster_grace': {
-        'skill_level': 20,
-        'depth': 20,
-        'time_limit': 0.5,
+        'depth': 18,
+        'maxThinkingTime': 100,
+        'error_chance': 0.0,
     },
 }
 
@@ -52,59 +41,54 @@ def _get_profile(bot_id: str) -> dict:
 
 
 def get_bot_move(fen: str, bot_id: str) -> tuple[str, str]:
-    """
-    Ask Stockfish for the best move for the current position.
-
-    Returns:
-        (uci_move, new_fen) — the move in UCI notation and the resulting FEN.
-    """
     profile = _get_profile(bot_id)
     board = chess.Board(fen)
 
-    with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
-        engine.configure({'Skill Level': profile['skill_level']})
-        result = engine.play(
-            board,
-            chess.engine.Limit(time=profile['time_limit'], depth=profile['depth']),
-        )
+    # Simulate weak play for Riley
+    if profile['error_chance'] > 0 and random.random() < profile['error_chance']:
+        move = random.choice(list(board.legal_moves))
+        board.push(move)
+        return move.uci(), board.fen()
 
-    move = result.move
-    board.push(move)
-    return move.uci(), board.fen()
+    payload = {
+        "fen": fen,
+        "depth": profile["depth"],
+        "maxThinkingTime": profile["maxThinkingTime"],
+    }
+
+    try:
+        resp = requests.post(API_URL, json=payload, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+        uci_move = data["move"]
+        board.push_uci(uci_move)
+        return uci_move, board.fen()
+    except Exception as e:
+        # Fallback: random legal move so the game never freezes
+        move = random.choice(list(board.legal_moves))
+        board.push(move)
+        return move.uci(), board.fen()
 
 
 def _evaluate(fen: str) -> int | None:
-    """
-    Return centipawn score from white's perspective for the given FEN.
-    Returns None if Stockfish is unavailable or position is terminal.
-    """
     try:
         board = chess.Board(fen)
         if board.is_game_over():
             return None
 
-        with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
-            info = engine.analyse(board, chess.engine.Limit(depth=12))
-            score = info['score'].white()
-            if score.is_mate():
-                return None
-            return score.score()
+        resp = requests.post(API_URL, json={"fen": fen, "depth": 12}, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
+
+        if data.get("mate") is not None:
+            return None
+        cp = data.get("centipawns")
+        return int(cp) if cp is not None else None
     except Exception:
         return None
 
 
 def detect_event(prev_fen: str | None, current_fen: str, bot_id: str) -> str:
-    """
-    Compare board states before/after the player's move to classify an event.
-
-    Event keys (match the keys in bot JSON files):
-        'greeting'      — very first move of the game
-        'blunder'       — player dropped ≥ BLUNDER_THRESHOLD centipawns
-        'check'         — player put the bot in check
-        'capture'       — player captured a bot piece
-        'promotion'     — player promoted a pawn
-        'default'       — nothing special happened
-    """
     if prev_fen is None:
         return 'greeting'
 
@@ -114,7 +98,7 @@ def detect_event(prev_fen: str | None, current_fen: str, bot_id: str) -> str:
     except ValueError:
         return 'default'
 
-    # Detect promotion: a pawn reached the back rank
+    # Promotion
     for move in prev_board.legal_moves:
         if move.promotion:
             pushed = chess.Board(prev_fen)
@@ -122,36 +106,26 @@ def detect_event(prev_fen: str | None, current_fen: str, bot_id: str) -> str:
             if pushed.fen() == current_fen:
                 return 'promotion'
 
-    # Detect capture: a piece disappeared from the board
-    prev_piece_count = sum(1 for sq in chess.SQUARES if prev_board.piece_at(sq))
-    curr_piece_count = sum(1 for sq in chess.SQUARES if curr_board.piece_at(sq))
-    if curr_piece_count < prev_piece_count:
-        # also check if it was a blunder alongside the capture
-        pass  # fall through to blunder check below; capture wins if no blunder
-
-    # Detect check
+    # Check
     if curr_board.is_check():
         return 'check'
 
-    # Detect blunder via centipawn evaluation
+    # Blunder
     prev_score = _evaluate(prev_fen)
     curr_score = _evaluate(current_fen)
-
     if prev_score is not None and curr_score is not None:
-        # Score is from white's perspective; figure out who the player is
-        # The side that just moved is the one whose turn it was in prev_fen
-        prev_board_turn = prev_board.turn   # chess.WHITE or chess.BLACK
         score_change = curr_score - prev_score
-        # If white just moved, a positive score_change is good for white (player didn't blunder)
-        # A negative change means white lost material (blunder)
-        if prev_board_turn == chess.WHITE:
+        if prev_board.turn == chess.WHITE:
             if score_change < -BLUNDER_THRESHOLD:
                 return 'blunder'
         else:
             if score_change > BLUNDER_THRESHOLD:
                 return 'blunder'
 
-    if curr_piece_count < prev_piece_count:
+    # Capture
+    prev_count = sum(1 for sq in chess.SQUARES if prev_board.piece_at(sq))
+    curr_count = sum(1 for sq in chess.SQUARES if curr_board.piece_at(sq))
+    if curr_count < prev_count:
         return 'capture'
 
     return 'default'

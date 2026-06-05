@@ -1,5 +1,7 @@
 from flask import Flask
 from extensions import db, login_manager
+import os
+
 
 
 def create_app():
@@ -28,6 +30,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    print("user_callback =", login_manager._user_callback)
-    print("app login_manager =", login_manager)
-    app.run(debug=True)
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
