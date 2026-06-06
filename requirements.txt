@@ -1,9 +1,8 @@
-pygame
 flask
 python-chess
-stockfish
+requests
 sqlalchemy
 flask-sqlalchemy
 flask-login
 werkzeug
-requests
+gunicorn
