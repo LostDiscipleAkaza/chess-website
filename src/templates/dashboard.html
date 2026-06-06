@@ -1,111 +1,76 @@
 {% extends 'base.html' %}
-{% block title %}Home — ChessBot{% endblock %}
+{% block title %}Dashboard — My Chess{% endblock %}
 
 {% block content %}
-<div class="dash-layout">
-  <aside class="dash-sidebar-left">
-    <div class="sidebar-section-label">Play</div>
-    <a href="/play?mode=pass_and_play" class="sidebar-link"><span class="sidebar-icon"></span> Pass &amp; Play</a>
-    <a href="#bot-section" class="sidebar-link"><span class="sidebar-icon"></span> Play vs Bot</a>
-    <div class="sidebar-section-label">Account</div>
-    <a href="{{ url_for('game.history') }}" class="sidebar-link"><span class="sidebar-icon"></span> Game History</a>
-    <div style="margin-top:auto">
-      <div class="sidebar-section-label">Account</div>
-      <a href="{{ url_for('auth.logout') }}" class="sidebar-link"><span class="sidebar-icon"></span> Logout</a>
-    </div>
-  </aside>
+<div class="dashboard">
+  <header class="dash-header">
+    <h1>Welcome back, <span class="accent">{{ current_user.username }}</span></h1>
+    <p>Choose a mode to start playing.</p>
+  </header>
 
-  <div class="dash-main">
-    <div class="stats-bar">
-      <div class="stat-pill"><div class="num" id="stat-games">—</div><div class="lbl">Games</div></div>
-      <div class="stat-pill"><div class="num" id="stat-wins">—</div><div class="lbl">Wins</div></div>
-      <div class="stat-pill"><div class="num" id="stat-losses">—</div><div class="lbl">Losses</div></div>
-      <div class="stat-pill"><div class="num" id="stat-rate">—</div><div class="lbl">Win Rate</div></div>
+  <section class="mode-cards">
+    <div class="mode-card">
+      <h2>Pass &amp; Play</h2>
+      <p>Two players, one board. Take turns on the same device.</p>
+      <a href="{{ url_for('game.play', mode='pass_and_play') }}" class="btn-primary">Play Now</a>
     </div>
 
-    <div class="section-heading">Play</div>
-    <div class="play-modes" style="margin-bottom:2rem">
-      <a href="/play?mode=pass_and_play" class="play-card">
-        <span class="play-card-icon"></span>
-        <h3>Pass &amp; Play</h3>
-        <p>Two players, one device. Take turns locally.</p>
-        <span class="play-card-tag">Local</span>
-      </a>
-      <div class="play-card" onclick="document.getElementById('bot-section').scrollIntoView({behavior:'smooth'})" style="cursor:pointer">
-        <span class="play-card-icon"></span>
-        <h3>Play vs Bot</h3>
-        <p>Challenge an AI opponent. Four difficulty levels.</p>
-        <span class="play-card-tag">AI</span>
-      </div>
-      <div class="play-card" style="opacity:.5;cursor:not-allowed">
-        <span class="play-card-icon"></span>
-        <h3>Online</h3>
-        <p>Play against others online.</p>
-        <span class="play-card-tag">Coming Soon</span>
-      </div>
+    <div class="mode-card">
+      <h2>Play vs Bot</h2>
+      <p>Challenge one of our personality-driven AI opponents.</p>
+      <a href="#bot-select" class="btn-primary">Choose Bot</a>
     </div>
+  </section>
 
-    <div class="section-heading" id="bot-section">Choose Your Opponent</div>
-    <div class="bots-grid" id="bot-grid">
-      <div style="color:var(--muted);font-size:.85rem">Loading bots...</div>
+  <section class="bot-select" id="bot-select">
+    <h2>Choose Your Opponent</h2>
+    <div class="bot-grid" id="bot-grid">
+      <p class="loading-text">Loading bots...</p>
     </div>
+  </section>
 
-    {% if games %}
-    <div class="section-heading" style="margin-top:2rem">Recent Games</div>
-    <div class="recent-panel">
-      <div class="recent-panel-header">
-        <h3>Recent Games</h3>
-        <a href="{{ url_for('game.history') }}">View all →</a>
-      </div>
-      {% for game in games %}
-        {% if (game.result == '1-0' and game.player_color == 'white') or (game.result == '0-1' and game.player_color == 'black') %}
-          {% set rc = 'win' %}{% set rl = 'Win' %}
-        {% elif game.result == '1/2-1/2' %}
-          {% set rc = 'draw' %}{% set rl = 'Draw' %}
-        {% else %}
-          {% set rc = 'loss' %}{% set rl = 'Loss' %}
-        {% endif %}
-        <a href="/replay/{{ game.id }}" class="game-row">
-          <div class="game-result-dot {{ rc }}"></div>
-          <div class="game-row-info">
-            <div class="game-row-opp">{{ game.bot_name or 'vs Player' }}</div>
-            <div class="game-row-date">{{ game.played_at.strftime('%b %d, %Y') }}</div>
-          </div>
-          <div class="game-row-res {{ rc }}">{{ rl }}</div>
-        </a>
-      {% endfor %}
-    </div>
-    {% endif %}
-  </div>
+  {% if games %}
+  <section class="recent-games">
+    <h2>Recent Games</h2>
+    <table class="games-table">
+      <thead>
+        <tr><th>Date</th><th>Mode</th><th>Opponent</th><th>Result</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for game in games %}
+        <tr>
+          <td>{{ game.played_at.strftime('%b %d, %Y') }}</td>
+          <td>{{ game.mode.replace('_', ' ').title() }}</td>
+          <td>{{ game.bot_name or '—' }}</td>
+          <td class="result result-{{ game.result }}">{{ game.result }}</td>
+          <td><a href="{{ url_for('game.replay', game_id=game.id) }}">Replay</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-fetch('/api/bots').then(r=>r.json()).then(bots=>{
-  document.getElementById('bot-grid').innerHTML=bots.map(b=>`
-    <div class="bot-card">
-      <div class="bot-emoji">${b.avatar}</div>
-      <div class="bot-details">
-        <h4>${b.name}</h4>
-        <div class="bot-elo">Elo ~${b.elo}</div>
-        <div class="bot-desc-short">${b.description}</div>
-      </div>
-      <div class="bot-btns">
-        <a class="primary" href="/play?mode=bot&bot=${b.id}&color=white">White</a>
-        <a href="/play?mode=bot&bot=${b.id}&color=black">Black</a>
-      </div>
-    </div>`).join('');
-}).catch(()=>{document.getElementById('bot-grid').innerHTML='<div style="color:var(--muted)">Could not load bots.</div>';});
-
-fetch('/api/history').then(r=>r.json()).then(games=>{
-  const total=games.length;
-  const wins=games.filter(g=>(g.result==='1-0'&&g.player_color==='white')||(g.result==='0-1'&&g.player_color==='black')).length;
-  const losses=games.filter(g=>(g.result==='1-0'&&g.player_color==='black')||(g.result==='0-1'&&g.player_color==='white')).length;
-  document.getElementById('stat-games').textContent=total;
-  document.getElementById('stat-wins').textContent=wins;
-  document.getElementById('stat-losses').textContent=losses;
-  document.getElementById('stat-rate').textContent=total>0?Math.round(wins/total*100)+'%':'—';
-}).catch(()=>{});
+  fetch('/api/bots')
+    .then(r => r.json())
+    .then(bots => {
+      const grid = document.getElementById('bot-grid');
+      grid.innerHTML = bots.map(bot => `
+        <div class="bot-card">
+          <div class="bot-initial">${bot.name.charAt(0)}</div>
+          <h3>${bot.name}</h3>
+          <p class="bot-elo">Elo ~${bot.elo}</p>
+          <p class="bot-desc">${bot.description}</p>
+          <div class="bot-actions">
+            <a href="/play?mode=bot&bot=${bot.id}&color=white" class="btn-sm">White</a>
+            <a href="/play?mode=bot&bot=${bot.id}&color=black" class="btn-sm btn-outline">Black</a>
+          </div>
+        </div>
+      `).join('');
+    });
 </script>
 {% endblock %}

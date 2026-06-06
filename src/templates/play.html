@@ -1,22 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Play — ChessBot{% endblock %}
+{% block title %}Play — My Chess{% endblock %}
 
 {% block head %}
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
-<style>
-  #board { width: 100% !important; }
-  .board-wrapper { width: min(560px, calc(100vw - 2rem)); }
-
-  /* Highlight selected square */
-  .highlight-selected {
-    box-shadow: inset 0 0 0 4px rgba(201, 168, 76, 0.85);
-  }
-  /* Highlight valid move targets */
-  .highlight-move {
-    box-shadow: inset 0 0 0 4px rgba(201, 168, 76, 0.4);
-  }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -24,7 +11,7 @@
 
   <div class="game-sidebar left-sidebar">
     <div class="player-info bot-info" id="bot-info" style="{{ 'display:none' if mode == 'pass_and_play' }}">
-      <div class="player-avatar" id="bot-avatar">🤖</div>
+      <div class="bot-initial-lg" id="bot-avatar">?</div>
       <div class="player-name" id="bot-name">{{ bot or 'Bot' }}</div>
     </div>
 
@@ -39,14 +26,10 @@
   </div>
 
   <div class="game-sidebar right-sidebar">
-    <div class="captured-pieces" id="captured-top"></div>
-
     <div class="move-history" id="move-history">
       <h3>Moves</h3>
       <ol id="move-list"></ol>
     </div>
-
-    <div class="captured-pieces" id="captured-bottom"></div>
 
     <div class="game-controls">
       <button id="btn-resign" class="btn-outline btn-danger">Resign</button>
@@ -73,6 +56,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
+
+<style>
+  .highlight-selected { background: rgba(201, 168, 76, 0.6) !important; }
+  .highlight-move      { background: rgba(201, 168, 76, 0.3) !important; }
+  .highlight-move .square-55d63 { position: relative; }
+  .square-55d63 { position: relative; }
+  .dot-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32%; height: 32%;
+    background: rgba(201, 168, 76, 0.75);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 10;
+  }
+</style>
+
 <script>
   const MODE      = "{{ mode }}";
   const BOT_ID    = "{{ bot or '' }}";
@@ -82,91 +83,54 @@
   const chess     = new Chess();
   const moveList  = document.getElementById('move-list');
 
-  // ── Click-to-move state ───────────────────────────────────────
-  let selectedSquare = null;   // currently selected square, e.g. 'e2'
+  // Click-to-move state
+  let selectedSquare = null;
 
-  // ── chessboard.js config ──────────────────────────────────────
-  const board = Chessboard('board', {
-    draggable: true,
-    position: 'start',
-    orientation: MODE === 'bot' ? MY_COLOR : 'white',
-    onDragStart,
-    onDrop,
-    onSnapEnd: () => board.position(chess.fen()),
-    onSquareClick,        // click-to-move handler
-  });
+  // Wikimedia SVG pieces — no server dependency
+  const WIKI = {
+    wK: '4/42/Chess_klt45.svg', wQ: '1/15/Chess_qlt45.svg',
+    wR: '7/72/Chess_rlt45.svg', wB: 'b/b1/Chess_blt45.svg',
+    wN: '7/70/Chess_nlt45.svg', wP: '4/45/Chess_plt45.svg',
+    bK: 'f/f0/Chess_kdt45.svg', bQ: '4/47/Chess_qdt45.svg',
+    bR: 'f/ff/Chess_rdt45.svg', bB: '9/98/Chess_bdt45.svg',
+    bN: 'e/ef/Chess_ndt45.svg', bP: 'c/c7/Chess_pdt45.svg',
+  };
+  function pieceTheme(p) {
+    return 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
+  }
 
-  $(window).resize(() => board.resize());
-
-  // ── Highlight helpers ─────────────────────────────────────────
+  // ── Highlight helpers ──────────────────────────────────────────
   function clearHighlights() {
     $('#board .square-55d63').removeClass('highlight-selected highlight-move');
+    $('#board .dot-hint').remove();
+    selectedSquare = null;
   }
 
-  function highlightSquare(sq, cls) {
-    $('#board .square-' + sq).addClass(cls);
+  function highlightSelected(sq) {
+    $('#board .square-' + sq).addClass('highlight-selected');
   }
 
-  function highlightMoves(sq) {
-    chess.moves({ square: sq, verbose: true }).forEach(m => {
-      highlightSquare(m.to, 'highlight-move');
+  function highlightMoves(moves) {
+    moves.forEach(m => {
+      const $sq = $('#board .square-' + m.to);
+      $sq.addClass('highlight-move');
+      $sq.append('<div class="dot-hint"></div>');
     });
   }
 
-  // ── Is it this player's turn? ─────────────────────────────────
+  // ── Is it my turn? ─────────────────────────────────────────────
   function isMyTurn() {
     if (chess.game_over()) return false;
-    if (MODE === 'bot') {
-      return chess.turn() === MY_COLOR[0];
-    } else {
-      return chess.turn() === currentTurn[0];
-    }
+    if (MODE === 'bot') return chess.turn() === MY_COLOR[0];
+    return chess.turn() === currentTurn[0];
   }
 
-  // ── Click-to-move ─────────────────────────────────────────────
-  function onSquareClick(square) {
-    if (!isMyTurn()) return;
-
-    const piece = chess.get(square);
-
-    // Nothing selected yet — select a friendly piece
-    if (!selectedSquare) {
-      if (!piece) return;
-      const myColor = MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
-      if (piece.color !== myColor) return;
-
-      selectedSquare = square;
-      clearHighlights();
-      highlightSquare(square, 'highlight-selected');
-      highlightMoves(square);
-      return;
-    }
-
-    // Same square clicked — deselect
-    if (selectedSquare === square) {
-      selectedSquare = null;
-      clearHighlights();
-      return;
-    }
-
-    // Clicked another friendly piece — reselect
-    const myColor = MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
-    if (piece && piece.color === myColor) {
-      selectedSquare = square;
-      clearHighlights();
-      highlightSquare(square, 'highlight-selected');
-      highlightMoves(square);
-      return;
-    }
-
-    // Attempt the move
-    attemptMove(selectedSquare, square);
-    selectedSquare = null;
-    clearHighlights();
+  function myColorChar() {
+    return MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
   }
 
-  // ── Shared move logic ─────────────────────────────────────────
-  function attemptMove(from, to) {
+  // ── Execute a move and handle aftermath ────────────────────────
+  function executeMove(from, to) {
     prevFen = chess.fen();
     const move = chess.move({ from, to, promotion: 'q' });
     if (!move) return false;
@@ -176,48 +140,71 @@
     checkGameOver();
 
     if (MODE === 'bot' && !chess.game_over()) {
-      setStatus("Bot is thinking...");
-      fetchBotMove(chess.fen());
+      setStatus('Bot is thinking...');
+      setTimeout(() => fetchBotMove(chess.fen()), 300);
     } else if (MODE === 'pass_and_play') {
       currentTurn = currentTurn === 'white' ? 'black' : 'white';
-      setStatus(`${capitalize(currentTurn)}'s turn`);
+      setStatus(capitalize(currentTurn) + "'s turn");
     }
     return true;
   }
 
-  // ── Drag handlers ─────────────────────────────────────────────
-  function onDragStart(source, piece) {
-    if (!isMyTurn()) return false;
-    if (MODE === 'bot') {
-      if ((MY_COLOR === 'white' && piece.startsWith('b')) ||
-          (MY_COLOR === 'black' && piece.startsWith('w'))) return false;
-    } else {
-      if ((currentTurn === 'white' && piece.startsWith('b')) ||
-          (currentTurn === 'black' && piece.startsWith('w'))) return false;
+  // ── Square click handler ───────────────────────────────────────
+  function onSquareClick(square) {
+    if (!isMyTurn()) return;
+
+    if (selectedSquare) {
+      if (square === selectedSquare) {
+        clearHighlights();
+        return;
+      }
+      // Attempt move
+      const ok = executeMove(selectedSquare, square);
+      clearHighlights();
+      if (!ok) {
+        // Maybe they clicked another own piece — re-select
+        const p = chess.get(square);
+        if (p && p.color === myColorChar()) {
+          selectSquare(square);
+        }
+      }
+      return;
     }
-    // Clear click selection when dragging starts
-    selectedSquare = null;
+
+    const p = chess.get(square);
+    if (!p || p.color !== myColorChar()) return;
+    selectSquare(square);
+  }
+
+  function selectSquare(square) {
     clearHighlights();
+    const moves = chess.moves({ square, verbose: true });
+    if (!moves.length) return;
+    selectedSquare = square;
+    highlightSelected(square);
+    highlightMoves(moves);
   }
 
-  function onDrop(source, target) {
-    prevFen = chess.fen();
-    const move = chess.move({ from: source, to: target, promotion: 'q' });
-    if (!move) return 'snapback';
+  // ── chessboard.js ──────────────────────────────────────────────
+  const board = Chessboard('board', {
+    draggable: true,
+    position: 'start',
+    orientation: MODE === 'bot' ? MY_COLOR : 'white',
+    pieceTheme: pieceTheme,
+    onDragStart: function(source, piece) {
+      if (!isMyTurn()) return false;
+      if (piece[0] !== myColorChar()) return false;
+      clearHighlights();
+    },
+    onDrop: function(source, target) {
+      const ok = executeMove(source, target);
+      if (!ok) return 'snapback';
+    },
+    onSnapEnd: function() { board.position(chess.fen()); },
+    onSquareClick: onSquareClick,
+  });
 
-    appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
-    checkGameOver();
-
-    if (MODE === 'bot' && !chess.game_over()) {
-      setStatus("Bot is thinking...");
-      fetchBotMove(chess.fen());
-    } else if (MODE === 'pass_and_play') {
-      currentTurn = currentTurn === 'white' ? 'black' : 'white';
-      setStatus(`${capitalize(currentTurn)}'s turn`);
-    }
-  }
-
-  // ── Bot move fetch ────────────────────────────────────────────
+  // ── Bot move ───────────────────────────────────────────────────
   function fetchBotMove(fen) {
     fetch('/api/move', {
       method: 'POST',
@@ -232,14 +219,14 @@
         board.position(chess.fen());
         appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
         checkGameOver();
-        setStatus("Your turn");
+        setStatus('Your turn');
       }
       if (data.dialogue) addChat(data.dialogue);
     })
     .catch(() => setStatus('Connection error'));
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
+  // ── Utilities ──────────────────────────────────────────────────
   function appendMove(san, color) {
     const li = document.createElement('li');
     li.textContent = san;
@@ -257,27 +244,24 @@
     box.scrollTop = box.scrollHeight;
   }
 
-  function setStatus(msg) {
-    document.getElementById('board-status').textContent = msg;
-  }
-
-  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function setStatus(msg) { document.getElementById('board-status').textContent = msg; }
+  function capitalize(s)  { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function checkGameOver() {
     if (!chess.game_over()) return;
     let title, body, result;
     if (chess.in_checkmate()) {
       const winner = chess.turn() === 'w' ? 'Black' : 'White';
-      title = `Checkmate — ${winner} wins!`;
+      title = 'Checkmate — ' + winner + ' wins!';
       body  = 'The king has fallen.';
       result = chess.turn() === 'w' ? '0-1' : '1-0';
     } else if (chess.in_draw()) {
       title = 'Draw';
-      body  = chess.in_stalemate() ? 'Stalemate.' :
+      body  = chess.in_stalemate()          ? 'Stalemate.'            :
               chess.insufficient_material() ? 'Insufficient material.' : 'Draw by repetition.';
       result = '1/2-1/2';
     }
-    showModal(title, body, result);
+    if (title) showModal(title, body, result);
   }
 
   function showModal(title, body, result) {
@@ -294,33 +278,31 @@
       body: JSON.stringify({ pgn: chess.pgn(), result, mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR }),
     }).then(r => r.json()).then(d => {
       if (d.game_id) {
-        document.getElementById('modal-save').textContent = 'Saved ✓';
+        document.getElementById('modal-save').textContent = 'Saved';
         document.getElementById('modal-save').disabled = true;
       }
     });
   }
 
-  // ── Controls ──────────────────────────────────────────────────
   document.getElementById('btn-resign').onclick = () => {
-    const result = MY_COLOR === 'white' ? '0-1' : '1-0';
-    showModal('You resigned.', 'Better luck next time.', result);
+    showModal('You resigned.', 'Better luck next time.', MY_COLOR === 'white' ? '0-1' : '1-0');
   };
-
   document.getElementById('btn-new').onclick = () => window.location.reload();
 
-  // ── Load bot info ─────────────────────────────────────────────
+  // ── Init ───────────────────────────────────────────────────────
   if (MODE === 'bot' && BOT_ID) {
     fetch('/api/bots').then(r => r.json()).then(bots => {
       const bot = bots.find(b => b.id === BOT_ID);
       if (bot) {
-        document.getElementById('bot-avatar').textContent = bot.avatar;
+        document.getElementById('bot-avatar').textContent = bot.name.charAt(0);
         document.getElementById('bot-name').textContent   = bot.name;
       }
     });
-    setStatus("Your turn");
     if (MY_COLOR === 'black') {
-      setStatus("Bot is thinking...");
-      fetchBotMove(chess.fen());
+      setStatus('Bot is thinking...');
+      setTimeout(() => fetchBotMove(chess.fen()), 500);
+    } else {
+      setStatus('Your turn');
     }
   } else {
     setStatus("White's turn");

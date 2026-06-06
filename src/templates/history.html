@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}History — ChessBot{% endblock %}
+{% block title %}History — My Chess{% endblock %}
 
 {% block content %}
 <div class="history-page">
@@ -25,11 +25,11 @@
 
   <div class="pagination">
     {% if games.has_prev %}
-      <a href="{{ url_for('game.history', page=games.prev_num) }}" class="btn-outline">← Prev</a>
+      <a href="{{ url_for('game.history', page=games.prev_num) }}" class="btn-outline">Prev</a>
     {% endif %}
     <span>Page {{ games.page }} of {{ games.pages }}</span>
     {% if games.has_next %}
-      <a href="{{ url_for('game.history', page=games.next_num) }}" class="btn-outline">Next →</a>
+      <a href="{{ url_for('game.history', page=games.next_num) }}" class="btn-outline">Next</a>
     {% endif %}
   </div>
   {% else %}

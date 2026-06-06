@@ -16,28 +16,28 @@ BOTS_MANIFEST = [
         'name': 'Rookie',
         'elo': 400,
         'description': 'Just learning the game.',
-        'avatar': 'R',
+        
     },
     {
         'id': 'balanced_bob',
         'name': 'Balanced',
         'elo': 1200,
         'description': 'Solid and Hard to trick.',
-        'avatar': 'B',
+    
     },
     {
         'id': 'aggressive_alex',
         'name': 'Aggressive',
         'elo': 1800,
         'description': 'Attacks at every opportunity. Hates draws.',
-        'avatar': 'A',
+
     },
     {
         'id': 'grandmaster_grace',
         'name': 'Master',
         'elo': 2400,
         'description': 'Ice-cold. Sees everything.',
-        'avatar': 'M',
+
     },
 ]
 
