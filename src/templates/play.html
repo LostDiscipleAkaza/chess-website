@@ -2,105 +2,58 @@
 {% block title %}Play — ChessBot{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
 <style>
-  body { overflow: hidden; }
-  .board-wrapper-outer { display:flex; align-items:center; gap:.5rem; }
+  #board { width: 100% !important; }
+  .board-wrapper { width: min(560px, calc(100vw - 2rem)); }
+
+  /* Highlight selected square */
+  .highlight-selected {
+    box-shadow: inset 0 0 0 4px rgba(201, 168, 76, 0.85);
+  }
+  /* Highlight valid move targets */
+  .highlight-move {
+    box-shadow: inset 0 0 0 4px rgba(201, 168, 76, 0.4);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="play-page">
 
-  <!-- Left sidebar -->
-  <div class="play-sidebar">
-    <div id="bot-strip" style="{{ 'display:none' if mode == 'pass_and_play' }}">
-      <div class="player-strip">
-        <div class="player-strip-avatar" id="bot-avatar"></div>
-        <div>
-          <div class="player-strip-name" id="bot-name">{{ bot or 'Bot' }}</div>
-          <div class="player-strip-sub">Opponent</div>
-        </div>
-      </div>
+  <div class="game-sidebar left-sidebar">
+    <div class="player-info bot-info" id="bot-info" style="{{ 'display:none' if mode == 'pass_and_play' }}">
+      <div class="player-avatar" id="bot-avatar">🤖</div>
+      <div class="player-name" id="bot-name">{{ bot or 'Bot' }}</div>
     </div>
 
-    <div class="side-panel" id="chat-panel" style="{{ 'display:none' if mode == 'pass_and_play' }}">
-      <div class="side-panel-head">Bot Chat</div>
-      <div class="chat-wrap" id="chat-messages"></div>
-    </div>
-
-    <!-- Theme picker -->
-    <div class="side-panel">
-      <div class="side-panel-head">Board Theme</div>
-      <div class="theme-picker">
-        <div class="theme-swatch active" data-theme="green" title="Green" onclick="setTheme('green',this)">
-          <span style="background:#eeeed2"></span><span style="background:#769656"></span>
-          <span style="background:#769656"></span><span style="background:#eeeed2"></span>
-        </div>
-        <div class="theme-swatch" data-theme="walnut" title="Walnut" onclick="setTheme('walnut',this)">
-          <span style="background:#f0d9b5"></span><span style="background:#b58863"></span>
-          <span style="background:#b58863"></span><span style="background:#f0d9b5"></span>
-        </div>
-        <div class="theme-swatch" data-theme="ocean" title="Ocean" onclick="setTheme('ocean',this)">
-          <span style="background:#dee3e6"></span><span style="background:#4682b4"></span>
-          <span style="background:#4682b4"></span><span style="background:#dee3e6"></span>
-        </div>
-        <div class="theme-swatch" data-theme="dusk" title="Purple Dusk" onclick="setTheme('dusk',this)">
-          <span style="background:#f0ece4"></span><span style="background:#7c5cbf"></span>
-          <span style="background:#7c5cbf"></span><span style="background:#f0ece4"></span>
-        </div>
-      </div>
+    <div class="chat-box" id="chat-box" style="{{ 'display:none' if mode == 'pass_and_play' }}">
+      <div class="chat-messages" id="chat-messages"></div>
     </div>
   </div>
 
-  <!-- Board area -->
   <div class="board-wrapper">
-    <!-- Top player -->
-    <div class="player-strip" style="width:520px">
-      <div>
-        <div class="player-strip-name" id="top-player-name">{{ bot if mode == 'bot' else 'Player 2' }}</div>
-        <div class="player-strip-sub" id="captured-top"></div>
-      </div>
+    <div id="board"></div>
+    <div class="board-status" id="board-status">Waiting for move...</div>
+  </div>
+
+  <div class="game-sidebar right-sidebar">
+    <div class="captured-pieces" id="captured-top"></div>
+
+    <div class="move-history" id="move-history">
+      <h3>Moves</h3>
+      <ol id="move-list"></ol>
     </div>
 
-    <div class="board-wrapper-outer">
-      <!-- Eval bar -->
-      <div class="eval-bar-wrap" id="eval-wrap" style = "{{ 'display:none' if mode != 'bot' }}">
-        <div class="eval-bar-inner" id="eval-bar"></div>
-      </div>
-      <div id="board" class="theme-green"></div>
-    </div>
+    <div class="captured-pieces" id="captured-bottom"></div>
 
-    <div class="board-status" id="board-status">Waiting...</div>
-
-    <!-- Bottom player -->
-    <div class="player-strip" style="width:520px">
-      <div class="player-strip-avatar"></div>
-      <div>
-        <div class="player-strip-name">{{ current_user.username if current_user.is_authenticated else 'Player 1' }}</div>
-        <div class="player-strip-sub" id="captured-bottom"></div>
-      </div>
+    <div class="game-controls">
+      <button id="btn-resign" class="btn-outline btn-danger">Resign</button>
+      <button id="btn-new" class="btn-outline">New Game</button>
     </div>
   </div>
 
-  <!-- Right sidebar -->
-  <div class="play-sidebar">
-    <div class="side-panel">
-      <div class="side-panel-head">Moves</div>
-      <div class="move-list-wrap" id="move-list-wrap">
-        <div id="move-pairs"></div>
-      </div>
-    </div>
-
-    <div class="side-panel">
-      <div class="side-panel-head">Controls</div>
-      <div class="game-controls">
-        <button id="btn-resign" class="btn btn-danger btn-sm">Resign</button>
-        <button id="btn-new" class="btn btn-outline btn-sm">New Game</button>
-        <a href="{{ url_for('game.dashboard') }}" class="btn btn-ghost btn-sm">← Home</a>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- Game over modal -->
@@ -109,8 +62,8 @@
     <h2 id="modal-title">Game Over</h2>
     <p id="modal-body"></p>
     <div class="modal-actions">
-      <button id="modal-save" class="btn btn-primary">Save Game</button>
-      <a href="{{ url_for('game.dashboard') }}" class="btn btn-outline">Dashboard</a>
+      <button id="modal-save" class="btn-primary">Save Game</button>
+      <a href="{{ url_for('game.dashboard') }}" class="btn-outline">Dashboard</a>
     </div>
   </div>
 </div>
@@ -121,180 +74,256 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 <script>
-const MODE     = "{{ mode | default('pass_and_play') }}";
-const BOT_ID   = "{{ bot | default('') }}";
-const MY_COLOR = "{{ color | default('white') }}";
-const PIECE_THEME = 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png';
+  const MODE      = "{{ mode }}";
+  const BOT_ID    = "{{ bot or '' }}";
+  const MY_COLOR  = "{{ color }}";
+  let prevFen     = null;
+  let currentTurn = 'white';
+  const chess     = new Chess();
+  const moveList  = document.getElementById('move-list');
 
-let prevFen = null;
-const chess = new Chess();
-let moveHistory = [];
+  // ── Click-to-move state ───────────────────────────────────────
+  let selectedSquare = null;   // currently selected square, e.g. 'e2'
 
-const board = Chessboard('board', {
-  draggable: true,
-  position: 'start',
-  orientation: MODE === 'bot' ? MY_COLOR : 'white',
-  pieceTheme: PIECE_THEME,
-  onDragStart,
-  onDrop,
-  onSnapEnd: () => board.position(chess.fen()),
-});
-
-function onDragStart(source, piece) {
-  if (chess.game_over()) return false;
-  if (MODE === 'bot') {
-    if (chess.turn() !== MY_COLOR[0]) return false;
-    if (MY_COLOR === 'white' && piece.startsWith('b')) return false;
-    if (MY_COLOR === 'black' && piece.startsWith('w')) return false;
-  } else {
-    if (chess.turn() === 'w' && piece.startsWith('b')) return false;
-    if (chess.turn() === 'b' && piece.startsWith('w')) return false;
-  }
-}
-
-function onDrop(source, target) {
-  prevFen = chess.fen();
-  const move = chess.move({ from: source, to: target, promotion: 'q' });
-  if (!move) return 'snapback';
-  moveHistory.push(move.san);
-  renderMoves();
-  checkGameOver();
-  if (MODE === 'bot' && !chess.game_over()) {
-    setStatus('Bot is thinking...');
-    fetchBotMove(chess.fen());
-  } else if (MODE === 'pass_and_play') {
-    setStatus((chess.turn() === 'w' ? 'White' : 'Black') + "'s turn");
-  }
-}
-
-function fetchBotMove(fen) {
-  fetch('/api/move', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({fen, bot_id: BOT_ID, prev_fen: prevFen}),
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.error) { setStatus('Error: ' + data.error); return; }
-    const move = chess.move({from: data.move.slice(0,2), to: data.move.slice(2,4), promotion:'q'});
-    if (move) {
-      board.position(chess.fen());
-      moveHistory.push(move.san);
-      renderMoves();
-      checkGameOver();
-      setStatus('Your turn');
-    }
-    if (data.dialogue) addChat(data.dialogue);
-    if (data.eval !== undefined) updateEval(data.eval);
-  })
-  .catch(err => setStatus('Connection error: ' + err.message));
-}
-
-function renderMoves() {
-  const el = document.getElementById('move-pairs');
-  let html = '';
-  for (let i = 0; i < moveHistory.length; i += 2) {
-    const num = Math.floor(i/2) + 1;
-    const w = moveHistory[i] || '';
-    const b = moveHistory[i+1] || '';
-    html += `<div class="move-pair">
-      <span class="move-num">${num}.</span>
-      <span class="move-san ${i===moveHistory.length-1||i===moveHistory.length-2?'active':''}">${w}</span>
-      <span class="move-san ${i+1===moveHistory.length-1?'active':''}">${b}</span>
-    </div>`;
-  }
-  el.innerHTML = html;
-  const wrap = document.getElementById('move-list-wrap');
-  wrap.scrollTop = wrap.scrollHeight;
-}
-
-function updateEval(score) {
-  const bar = document.getElementById('eval-bar');
-  if (!bar) return;
-  const clamped = Math.max(-10, Math.min(10, score / 100));
-  const pct = 50 + (clamped * 5);
-  bar.style.height = pct + '%';
-}
-
-function addChat(text) {
-  const box = document.getElementById('chat-messages');
-  const msg = document.createElement('div');
-  msg.className = 'chat-msg';
-  msg.textContent = text;
-  box.appendChild(msg);
-  box.scrollTop = box.scrollHeight;
-}
-
-function setStatus(msg) {
-  document.getElementById('board-status').textContent = msg;
-}
-
-function checkGameOver() {
-  if (!chess.game_over()) return;
-  let title, body, result;
-  if (chess.in_checkmate()) {
-    const winner = chess.turn() === 'w' ? 'Black' : 'White';
-    title = `${winner} wins by checkmate!`;
-    body = 'The king has fallen.';
-    result = chess.turn() === 'w' ? '0-1' : '1-0';
-  } else if (chess.in_draw()) {
-    title = 'Draw';
-    body = chess.in_stalemate() ? 'Stalemate.' : chess.insufficient_material() ? 'Insufficient material.' : 'Draw by repetition.';
-    result = '1/2-1/2';
-  }
-  setTimeout(() => showModal(title, body, result), 500);
-}
-
-function showModal(title, body, result) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').textContent  = body;
-  document.getElementById('modal').style.display = 'flex';
-  document.getElementById('modal-save').onclick = () => saveGame(result);
-}
-
-function saveGame(result) {
-  fetch('/api/save', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({pgn: chess.pgn(), result, mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR}),
-  }).then(r=>r.json()).then(d=>{
-    if (d.game_id) {
-      document.getElementById('modal-save').textContent = 'Saved ✓';
-      document.getElementById('modal-save').disabled = true;
-    }
+  // ── chessboard.js config ──────────────────────────────────────
+  const board = Chessboard('board', {
+    draggable: true,
+    position: 'start',
+    orientation: MODE === 'bot' ? MY_COLOR : 'white',
+    onDragStart,
+    onDrop,
+    onSnapEnd: () => board.position(chess.fen()),
+    onSquareClick,        // click-to-move handler
   });
-}
 
-function setTheme(theme, el) {
-  const boardEl = document.getElementById('board');
-  boardEl.className = boardEl.className.replace(/theme-\w+/, '') + ' theme-' + theme;
-  document.querySelectorAll('.theme-swatch').forEach(s => s.classList.remove('active'));
-  el.classList.add('active');
-}
+  $(window).resize(() => board.resize());
 
-document.getElementById('btn-resign').onclick = () => {
-  const result = MY_COLOR === 'white' ? '0-1' : '1-0';
-  showModal('You resigned.', 'Better luck next time.', result);
-};
-document.getElementById('btn-new').onclick = () => window.location.reload();
-
-if (MODE === 'bot' && BOT_ID) {
-  fetch('/api/bots').then(r=>r.json()).then(bots=>{
-    const bot = bots.find(b=>b.id===BOT_ID);
-    if (bot) {
-      document.getElementById('bot-avatar').textContent = bot.avatar;
-      document.getElementById('bot-name').textContent   = bot.name;
-      document.getElementById('top-player-name').textContent = bot.name;
-    }
-  });
-  if (MY_COLOR === 'black') {
-    setStatus('Bot is thinking...');
-    fetchBotMove(chess.fen());
-  } else {
-    setStatus("Your turn — you play White");
+  // ── Highlight helpers ─────────────────────────────────────────
+  function clearHighlights() {
+    $('#board .square-55d63').removeClass('highlight-selected highlight-move');
   }
-} else {
-  setStatus("White's turn");
-}
+
+  function highlightSquare(sq, cls) {
+    $('#board .square-' + sq).addClass(cls);
+  }
+
+  function highlightMoves(sq) {
+    chess.moves({ square: sq, verbose: true }).forEach(m => {
+      highlightSquare(m.to, 'highlight-move');
+    });
+  }
+
+  // ── Is it this player's turn? ─────────────────────────────────
+  function isMyTurn() {
+    if (chess.game_over()) return false;
+    if (MODE === 'bot') {
+      return chess.turn() === MY_COLOR[0];
+    } else {
+      return chess.turn() === currentTurn[0];
+    }
+  }
+
+  // ── Click-to-move ─────────────────────────────────────────────
+  function onSquareClick(square) {
+    if (!isMyTurn()) return;
+
+    const piece = chess.get(square);
+
+    // Nothing selected yet — select a friendly piece
+    if (!selectedSquare) {
+      if (!piece) return;
+      const myColor = MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
+      if (piece.color !== myColor) return;
+
+      selectedSquare = square;
+      clearHighlights();
+      highlightSquare(square, 'highlight-selected');
+      highlightMoves(square);
+      return;
+    }
+
+    // Same square clicked — deselect
+    if (selectedSquare === square) {
+      selectedSquare = null;
+      clearHighlights();
+      return;
+    }
+
+    // Clicked another friendly piece — reselect
+    const myColor = MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
+    if (piece && piece.color === myColor) {
+      selectedSquare = square;
+      clearHighlights();
+      highlightSquare(square, 'highlight-selected');
+      highlightMoves(square);
+      return;
+    }
+
+    // Attempt the move
+    attemptMove(selectedSquare, square);
+    selectedSquare = null;
+    clearHighlights();
+  }
+
+  // ── Shared move logic ─────────────────────────────────────────
+  function attemptMove(from, to) {
+    prevFen = chess.fen();
+    const move = chess.move({ from, to, promotion: 'q' });
+    if (!move) return false;
+
+    board.position(chess.fen());
+    appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
+    checkGameOver();
+
+    if (MODE === 'bot' && !chess.game_over()) {
+      setStatus("Bot is thinking...");
+      fetchBotMove(chess.fen());
+    } else if (MODE === 'pass_and_play') {
+      currentTurn = currentTurn === 'white' ? 'black' : 'white';
+      setStatus(`${capitalize(currentTurn)}'s turn`);
+    }
+    return true;
+  }
+
+  // ── Drag handlers ─────────────────────────────────────────────
+  function onDragStart(source, piece) {
+    if (!isMyTurn()) return false;
+    if (MODE === 'bot') {
+      if ((MY_COLOR === 'white' && piece.startsWith('b')) ||
+          (MY_COLOR === 'black' && piece.startsWith('w'))) return false;
+    } else {
+      if ((currentTurn === 'white' && piece.startsWith('b')) ||
+          (currentTurn === 'black' && piece.startsWith('w'))) return false;
+    }
+    // Clear click selection when dragging starts
+    selectedSquare = null;
+    clearHighlights();
+  }
+
+  function onDrop(source, target) {
+    prevFen = chess.fen();
+    const move = chess.move({ from: source, to: target, promotion: 'q' });
+    if (!move) return 'snapback';
+
+    appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
+    checkGameOver();
+
+    if (MODE === 'bot' && !chess.game_over()) {
+      setStatus("Bot is thinking...");
+      fetchBotMove(chess.fen());
+    } else if (MODE === 'pass_and_play') {
+      currentTurn = currentTurn === 'white' ? 'black' : 'white';
+      setStatus(`${capitalize(currentTurn)}'s turn`);
+    }
+  }
+
+  // ── Bot move fetch ────────────────────────────────────────────
+  function fetchBotMove(fen) {
+    fetch('/api/move', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fen, bot_id: BOT_ID, prev_fen: prevFen }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { setStatus('Engine error: ' + data.error); return; }
+      const move = chess.move({ from: data.move.slice(0,2), to: data.move.slice(2,4), promotion: 'q' });
+      if (move) {
+        board.position(chess.fen());
+        appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
+        checkGameOver();
+        setStatus("Your turn");
+      }
+      if (data.dialogue) addChat(data.dialogue);
+    })
+    .catch(() => setStatus('Connection error'));
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function appendMove(san, color) {
+    const li = document.createElement('li');
+    li.textContent = san;
+    li.className = color;
+    moveList.appendChild(li);
+    moveList.scrollTop = moveList.scrollHeight;
+  }
+
+  function addChat(text) {
+    const box = document.getElementById('chat-messages');
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg';
+    msg.textContent = text;
+    box.appendChild(msg);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function setStatus(msg) {
+    document.getElementById('board-status').textContent = msg;
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+  function checkGameOver() {
+    if (!chess.game_over()) return;
+    let title, body, result;
+    if (chess.in_checkmate()) {
+      const winner = chess.turn() === 'w' ? 'Black' : 'White';
+      title = `Checkmate — ${winner} wins!`;
+      body  = 'The king has fallen.';
+      result = chess.turn() === 'w' ? '0-1' : '1-0';
+    } else if (chess.in_draw()) {
+      title = 'Draw';
+      body  = chess.in_stalemate() ? 'Stalemate.' :
+              chess.insufficient_material() ? 'Insufficient material.' : 'Draw by repetition.';
+      result = '1/2-1/2';
+    }
+    showModal(title, body, result);
+  }
+
+  function showModal(title, body, result) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').textContent  = body;
+    document.getElementById('modal').style.display = 'flex';
+    document.getElementById('modal-save').onclick = () => saveGame(result);
+  }
+
+  function saveGame(result) {
+    fetch('/api/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pgn: chess.pgn(), result, mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR }),
+    }).then(r => r.json()).then(d => {
+      if (d.game_id) {
+        document.getElementById('modal-save').textContent = 'Saved ✓';
+        document.getElementById('modal-save').disabled = true;
+      }
+    });
+  }
+
+  // ── Controls ──────────────────────────────────────────────────
+  document.getElementById('btn-resign').onclick = () => {
+    const result = MY_COLOR === 'white' ? '0-1' : '1-0';
+    showModal('You resigned.', 'Better luck next time.', result);
+  };
+
+  document.getElementById('btn-new').onclick = () => window.location.reload();
+
+  // ── Load bot info ─────────────────────────────────────────────
+  if (MODE === 'bot' && BOT_ID) {
+    fetch('/api/bots').then(r => r.json()).then(bots => {
+      const bot = bots.find(b => b.id === BOT_ID);
+      if (bot) {
+        document.getElementById('bot-avatar').textContent = bot.avatar;
+        document.getElementById('bot-name').textContent   = bot.name;
+      }
+    });
+    setStatus("Your turn");
+    if (MY_COLOR === 'black') {
+      setStatus("Bot is thinking...");
+      fetchBotMove(chess.fen());
+    }
+  } else {
+    setStatus("White's turn");
+  }
 </script>
 {% endblock %}
