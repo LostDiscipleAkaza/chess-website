@@ -4,46 +4,192 @@
 {% block head %}
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+<style>
+  /* ── Responsive play layout ── */
+  .play-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem 2rem;
+  }
+
+  .board-wrapper {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  #board { width: 100% !important; }
+
+  .board-status {
+    color: var(--muted);
+    font-size: .9rem;
+    text-align: center;
+    min-height: 1.4em;
+  }
+
+  /* Bot info bar */
+  .bot-info-bar {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem 1rem;
+  }
+  .bot-initial-sm {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head);
+    font-size: 1rem;
+    color: var(--accent);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .bot-name {
+    font-family: var(--font-head);
+    font-size: 1rem;
+    flex: 1;
+  }
+
+  /* Chat strip */
+  .chat-strip {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+  .chat-msg {
+    font-size: .85rem;
+    color: var(--text);
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: .45rem .75rem;
+    line-height: 1.4;
+    animation: fadeIn .3s ease;
+  }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:none; } }
+
+  /* Move list */
+  .move-history {
+    width: 100%;
+    max-width: 560px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+  }
+  .move-history h3 {
+    font-size: .75rem;
+    text-transform: uppercase;
+    color: var(--muted);
+    letter-spacing: .06em;
+    margin-bottom: .5rem;
+  }
+  #move-list {
+    list-style: decimal;
+    padding-left: 1.2rem;
+    font-size: .9rem;
+    max-height: 110px;
+    overflow-y: auto;
+    columns: 2;
+    gap: 1rem;
+  }
+  #move-list li { padding: .1rem 0; break-inside: avoid; }
+  #move-list li.active { color: var(--accent); }
+
+  /* Controls */
+  .game-controls {
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    gap: 0.75rem;
+  }
+  .game-controls button { flex: 1; }
+
+  /* Square highlights */
+  .square-55d63 { position: relative; }
+  .highlight-selected { background: rgba(201,168,76,.65) !important; }
+  .highlight-move     { background: rgba(201,168,76,.30) !important; }
+  .dot-hint {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 30%; height: 30%;
+    background: rgba(201,168,76,.80);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Desktop side-by-side */
+  @media (min-width: 900px) {
+    .play-page {
+      display: grid;
+      grid-template-columns: 200px 1fr 200px;
+      max-width: 1060px;
+      align-items: start;
+      gap: 1.5rem;
+      padding: 1rem 2rem 2rem;
+    }
+    .board-wrapper  { grid-column: 2; grid-row: 1 / 10; max-width: 560px; }
+    .bot-info-bar   { grid-column: 1; grid-row: 1; max-width: none; }
+    .chat-strip     { grid-column: 1; grid-row: 2; max-height: 260px; max-width: none; }
+    .move-history   { grid-column: 3; grid-row: 1; max-width: none; }
+    #move-list      { max-height: 340px; columns: 1; }
+    .game-controls  { grid-column: 3; grid-row: 2; max-width: none; flex-direction: column; }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="play-page">
 
-  <div class="game-sidebar left-sidebar">
-    <div class="player-info bot-info" id="bot-info" style="{{ 'display:none' if mode == 'pass_and_play' }}">
-      <div class="bot-initial-lg" id="bot-avatar">?</div>
-      <div class="player-name" id="bot-name">{{ bot or 'Bot' }}</div>
-    </div>
-
-    <div class="chat-box" id="chat-box" style="{{ 'display:none' if mode == 'pass_and_play' }}">
-      <div class="chat-messages" id="chat-messages"></div>
-    </div>
+  <div class="bot-info-bar" id="bot-info-bar"
+       style="{{ 'display:none' if mode == 'pass_and_play' }}">
+    <div class="bot-initial-sm" id="bot-avatar">?</div>
+    <div class="bot-name" id="bot-name">{{ bot or 'Bot' }}</div>
   </div>
+
+  <div class="chat-strip" id="chat-strip"
+       style="{{ 'display:none' if mode == 'pass_and_play' }}"></div>
 
   <div class="board-wrapper">
     <div id="board"></div>
-    <div class="board-status" id="board-status">Waiting for move...</div>
+    <div class="board-status" id="board-status">Waiting...</div>
   </div>
 
-  <div class="game-sidebar right-sidebar">
-    <div class="move-history" id="move-history">
-      <h3>Moves</h3>
-      <ol id="move-list"></ol>
-    </div>
+  <div class="move-history">
+    <h3>Moves</h3>
+    <ol id="move-list"></ol>
+  </div>
 
-    <div class="game-controls">
-      <button id="btn-resign" class="btn-outline btn-danger">Resign</button>
-      <button id="btn-new" class="btn-outline">New Game</button>
-    </div>
+  <div class="game-controls">
+    <button id="btn-resign" class="btn-outline btn-danger">Resign</button>
+    <button id="btn-new"    class="btn-outline">New Game</button>
   </div>
 
 </div>
 
-<!-- Game over modal -->
 <div class="modal-overlay" id="modal" style="display:none">
   <div class="modal-box">
     <h2 id="modal-title">Game Over</h2>
-    <p id="modal-body"></p>
+    <p  id="modal-body"></p>
     <div class="modal-actions">
       <button id="modal-save" class="btn-primary">Save Game</button>
       <a href="{{ url_for('game.dashboard') }}" class="btn-outline">Dashboard</a>
@@ -56,24 +202,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
-
-<style>
-  .highlight-selected { background: rgba(201, 168, 76, 0.6) !important; }
-  .highlight-move      { background: rgba(201, 168, 76, 0.3) !important; }
-  .highlight-move .square-55d63 { position: relative; }
-  .square-55d63 { position: relative; }
-  .dot-hint {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 32%; height: 32%;
-    background: rgba(201, 168, 76, 0.75);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 10;
-  }
-</style>
-
 <script>
   const MODE      = "{{ mode }}";
   const BOT_ID    = "{{ bot or '' }}";
@@ -83,45 +211,49 @@
   const chess     = new Chess();
   const moveList  = document.getElementById('move-list');
 
-  // Click-to-move state
-  let selectedSquare = null;
+  // ── State flags ───────────────────────────────────────────────
+  let selectedSquare = null;   // square currently selected for click-move
+  let dragInProgress = false;  // true while a drag is happening
+  let botThinking    = false;  // true while waiting for bot response
 
-  // Wikimedia SVG pieces — no server dependency
+  // ── Wikimedia SVG pieces ──────────────────────────────────────
   const WIKI = {
-    wK: '4/42/Chess_klt45.svg', wQ: '1/15/Chess_qlt45.svg',
-    wR: '7/72/Chess_rlt45.svg', wB: 'b/b1/Chess_blt45.svg',
-    wN: '7/70/Chess_nlt45.svg', wP: '4/45/Chess_plt45.svg',
-    bK: 'f/f0/Chess_kdt45.svg', bQ: '4/47/Chess_qdt45.svg',
-    bR: 'f/ff/Chess_rdt45.svg', bB: '9/98/Chess_bdt45.svg',
-    bN: 'e/ef/Chess_ndt45.svg', bP: 'c/c7/Chess_pdt45.svg',
+    wK:'4/42/Chess_klt45.svg', wQ:'1/15/Chess_qlt45.svg',
+    wR:'7/72/Chess_rlt45.svg', wB:'b/b1/Chess_blt45.svg',
+    wN:'7/70/Chess_nlt45.svg', wP:'4/45/Chess_plt45.svg',
+    bK:'f/f0/Chess_kdt45.svg', bQ:'4/47/Chess_qdt45.svg',
+    bR:'f/ff/Chess_rdt45.svg', bB:'9/98/Chess_bdt45.svg',
+    bN:'e/ef/Chess_ndt45.svg', bP:'c/c7/Chess_pdt45.svg',
   };
   function pieceTheme(p) {
     return 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
   }
 
-  // ── Highlight helpers ──────────────────────────────────────────
+  // ── Highlights ────────────────────────────────────────────────
   function clearHighlights() {
     $('#board .square-55d63').removeClass('highlight-selected highlight-move');
     $('#board .dot-hint').remove();
     selectedSquare = null;
   }
 
-  function highlightSelected(sq) {
-    $('#board .square-' + sq).addClass('highlight-selected');
-  }
-
-  function highlightMoves(moves) {
-    moves.forEach(m => {
-      const $sq = $('#board .square-' + m.to);
-      $sq.addClass('highlight-move');
-      $sq.append('<div class="dot-hint"></div>');
+  function doSelectSquare(square) {
+    clearHighlights();
+    const moves = chess.moves({ square: square, verbose: true });
+    if (!moves.length) return;
+    selectedSquare = square;
+    $('#board .square-' + square).addClass('highlight-selected');
+    moves.forEach(function(m) {
+      $('#board .square-' + m.to)
+        .addClass('highlight-move')
+        .append('<div class="dot-hint"></div>');
     });
   }
 
-  // ── Is it my turn? ─────────────────────────────────────────────
+  // ── Turn helpers ──────────────────────────────────────────────
   function isMyTurn() {
     if (chess.game_over()) return false;
-    if (MODE === 'bot') return chess.turn() === MY_COLOR[0];
+    if (botThinking)       return false;
+    if (MODE === 'bot')    return chess.turn() === MY_COLOR[0];
     return chess.turn() === currentTurn[0];
   }
 
@@ -129,10 +261,10 @@
     return MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
   }
 
-  // ── Execute a move and handle aftermath ────────────────────────
+  // ── Execute a move (shared by click and drag) ─────────────────
   function executeMove(from, to) {
     prevFen = chess.fen();
-    const move = chess.move({ from, to, promotion: 'q' });
+    var move = chess.move({ from: from, to: to, promotion: 'q' });
     if (!move) return false;
 
     board.position(chess.fen());
@@ -140,125 +272,164 @@
     checkGameOver();
 
     if (MODE === 'bot' && !chess.game_over()) {
+      botThinking = true;
       setStatus('Bot is thinking...');
-      setTimeout(() => fetchBotMove(chess.fen()), 300);
+      setTimeout(function() { fetchBotMove(chess.fen()); }, 300);
     } else if (MODE === 'pass_and_play') {
       currentTurn = currentTurn === 'white' ? 'black' : 'white';
       setStatus(capitalize(currentTurn) + "'s turn");
+    } else if (MODE === 'bot' && chess.game_over()) {
+      // already handled by checkGameOver
+    } else {
+      setStatus('Your turn');
     }
     return true;
   }
 
-  // ── Square click handler ───────────────────────────────────────
-  function onSquareClick(square) {
-    if (!isMyTurn()) return;
+  // ── chessboard.js callbacks ───────────────────────────────────
 
+  function onDragStart(source, piece) {
+    if (!isMyTurn())               return false;
+    if (piece[0] !== myColorChar()) return false;
+    // Starting a drag — clear any click-selection and set flag
+    clearHighlights();
+    dragInProgress = true;
+  }
+
+  function onDrop(source, target) {
+    // Drop fires before onSnapEnd; mark drag done after a tick
+    var ok = executeMove(source, target);
+    if (!ok) {
+      dragInProgress = false;
+      return 'snapback';
+    }
+    // Keep dragInProgress = true; clear it in onSnapEnd
+  }
+
+  function onSnapEnd() {
+    board.position(chess.fen());
+    // Clear drag flag after a short delay so onSquareClick
+    // (which fires right after snapEnd) sees it and skips
+    setTimeout(function() { dragInProgress = false; }, 50);
+  }
+
+  function onSquareClick(square) {
+    // Ignore clicks that are the tail end of a drag
+    if (dragInProgress) return;
+    if (!isMyTurn())    return;
+
+    // If a piece is already selected, try to move to this square
     if (selectedSquare) {
       if (square === selectedSquare) {
         clearHighlights();
         return;
       }
-      // Attempt move
-      const ok = executeMove(selectedSquare, square);
+      var ok = executeMove(selectedSquare, square);
       clearHighlights();
       if (!ok) {
-        // Maybe they clicked another own piece — re-select
-        const p = chess.get(square);
+        // Maybe they clicked a different own piece — select it instead
+        var p = chess.get(square);
         if (p && p.color === myColorChar()) {
-          selectSquare(square);
+          doSelectSquare(square);
         }
       }
       return;
     }
 
-    const p = chess.get(square);
+    // Nothing selected yet — select if it's the player's piece
+    var p = chess.get(square);
     if (!p || p.color !== myColorChar()) return;
-    selectSquare(square);
+    doSelectSquare(square);
   }
 
-  function selectSquare(square) {
-    clearHighlights();
-    const moves = chess.moves({ square, verbose: true });
-    if (!moves.length) return;
-    selectedSquare = square;
-    highlightSelected(square);
-    highlightMoves(moves);
-  }
-
-  // ── chessboard.js ──────────────────────────────────────────────
-  const board = Chessboard('board', {
-    draggable: true,
-    position: 'start',
-    orientation: MODE === 'bot' ? MY_COLOR : 'white',
-    pieceTheme: pieceTheme,
-    onDragStart: function(source, piece) {
-      if (!isMyTurn()) return false;
-      if (piece[0] !== myColorChar()) return false;
-      clearHighlights();
-    },
-    onDrop: function(source, target) {
-      const ok = executeMove(source, target);
-      if (!ok) return 'snapback';
-    },
-    onSnapEnd: function() { board.position(chess.fen()); },
+  // ── Board init ────────────────────────────────────────────────
+  var board = Chessboard('board', {
+    draggable:     true,
+    position:      'start',
+    orientation:   MODE === 'bot' ? MY_COLOR : 'white',
+    pieceTheme:    pieceTheme,
+    onDragStart:   onDragStart,
+    onDrop:        onDrop,
+    onSnapEnd:     onSnapEnd,
     onSquareClick: onSquareClick,
   });
 
-  // ── Bot move ───────────────────────────────────────────────────
+  // Resize board to fill container
+  function resizeBoard() {
+    var wrapper = document.querySelector('.board-wrapper');
+    var sz = Math.min(wrapper.clientWidth, 560);
+    board.resize(sz);
+  }
+  resizeBoard();
+  window.addEventListener('resize', resizeBoard);
+
+  // ── Bot move fetch ────────────────────────────────────────────
   function fetchBotMove(fen) {
     fetch('/api/move', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fen, bot_id: BOT_ID, prev_fen: prevFen }),
+      body: JSON.stringify({ fen: fen, bot_id: BOT_ID, prev_fen: prevFen }),
     })
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      botThinking = false;
       if (data.error) { setStatus('Engine error: ' + data.error); return; }
-      const move = chess.move({ from: data.move.slice(0,2), to: data.move.slice(2,4), promotion: 'q' });
+      var move = chess.move({
+        from: data.move.slice(0,2),
+        to:   data.move.slice(2,4),
+        promotion: 'q'
+      });
       if (move) {
         board.position(chess.fen());
         appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
         checkGameOver();
-        setStatus('Your turn');
+        if (!chess.game_over()) setStatus('Your turn');
       }
       if (data.dialogue) addChat(data.dialogue);
     })
-    .catch(() => setStatus('Connection error'));
+    .catch(function() {
+      botThinking = false;
+      setStatus('Connection error — try again');
+    });
   }
 
-  // ── Utilities ──────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────
   function appendMove(san, color) {
-    const li = document.createElement('li');
+    var li = document.createElement('li');
     li.textContent = san;
-    li.className = color;
+    li.className   = color;
     moveList.appendChild(li);
     moveList.scrollTop = moveList.scrollHeight;
   }
 
   function addChat(text) {
-    const box = document.getElementById('chat-messages');
-    const msg = document.createElement('div');
-    msg.className = 'chat-msg';
+    var strip = document.getElementById('chat-strip');
+    var msg   = document.createElement('div');
+    msg.className   = 'chat-msg';
     msg.textContent = text;
-    box.appendChild(msg);
-    box.scrollTop = box.scrollHeight;
+    strip.appendChild(msg);
+    strip.scrollTop = strip.scrollHeight;
   }
 
-  function setStatus(msg) { document.getElementById('board-status').textContent = msg; }
-  function capitalize(s)  { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function setStatus(msg) {
+    document.getElementById('board-status').textContent = msg;
+  }
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function checkGameOver() {
     if (!chess.game_over()) return;
-    let title, body, result;
+    var title, body, result;
     if (chess.in_checkmate()) {
-      const winner = chess.turn() === 'w' ? 'Black' : 'White';
-      title = 'Checkmate — ' + winner + ' wins!';
-      body  = 'The king has fallen.';
+      var winner = chess.turn() === 'w' ? 'Black' : 'White';
+      title  = 'Checkmate — ' + winner + ' wins!';
+      body   = 'The king has fallen.';
       result = chess.turn() === 'w' ? '0-1' : '1-0';
     } else if (chess.in_draw()) {
-      title = 'Draw';
-      body  = chess.in_stalemate()          ? 'Stalemate.'            :
-              chess.insufficient_material() ? 'Insufficient material.' : 'Draw by repetition.';
+      title  = 'Draw';
+      body   = chess.in_stalemate()          ? 'Stalemate.'
+             : chess.insufficient_material() ? 'Insufficient material.'
+             :                                 'Draw by repetition.';
       result = '1/2-1/2';
     }
     if (title) showModal(title, body, result);
@@ -267,40 +438,51 @@
   function showModal(title, body, result) {
     document.getElementById('modal-title').textContent = title;
     document.getElementById('modal-body').textContent  = body;
-    document.getElementById('modal').style.display = 'flex';
-    document.getElementById('modal-save').onclick = () => saveGame(result);
+    document.getElementById('modal').style.display     = 'flex';
+    document.getElementById('modal-save').onclick = function() { saveGame(result); };
   }
 
   function saveGame(result) {
     fetch('/api/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pgn: chess.pgn(), result, mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR }),
-    }).then(r => r.json()).then(d => {
+      body: JSON.stringify({
+        pgn: chess.pgn(), result: result,
+        mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR
+      }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
       if (d.game_id) {
         document.getElementById('modal-save').textContent = 'Saved';
-        document.getElementById('modal-save').disabled = true;
+        document.getElementById('modal-save').disabled    = true;
       }
     });
   }
 
-  document.getElementById('btn-resign').onclick = () => {
-    showModal('You resigned.', 'Better luck next time.', MY_COLOR === 'white' ? '0-1' : '1-0');
+  document.getElementById('btn-resign').onclick = function() {
+    showModal('You resigned.', 'Better luck next time.',
+              MY_COLOR === 'white' ? '0-1' : '1-0');
   };
-  document.getElementById('btn-new').onclick = () => window.location.reload();
+  document.getElementById('btn-new').onclick = function() {
+    window.location.reload();
+  };
 
-  // ── Init ───────────────────────────────────────────────────────
+  // ── Start ─────────────────────────────────────────────────────
   if (MODE === 'bot' && BOT_ID) {
-    fetch('/api/bots').then(r => r.json()).then(bots => {
-      const bot = bots.find(b => b.id === BOT_ID);
-      if (bot) {
-        document.getElementById('bot-avatar').textContent = bot.name.charAt(0);
-        document.getElementById('bot-name').textContent   = bot.name;
-      }
-    });
+    fetch('/api/bots')
+      .then(function(r) { return r.json(); })
+      .then(function(bots) {
+        var bot = bots.find(function(b) { return b.id === BOT_ID; });
+        if (bot) {
+          document.getElementById('bot-avatar').textContent = bot.name.charAt(0);
+          document.getElementById('bot-name').textContent   = bot.name;
+        }
+      });
     if (MY_COLOR === 'black') {
+      botThinking = true;
       setStatus('Bot is thinking...');
-      setTimeout(() => fetchBotMove(chess.fen()), 500);
+      setTimeout(function() { fetchBotMove(chess.fen()); }, 500);
     } else {
       setStatus('Your turn');
     }
