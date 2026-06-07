@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Review — ChessBot{% endblock %}
+{% block title %}Review — My Chess{% endblock %}
 
 {% block head %}
 <link rel="stylesheet"
@@ -276,7 +276,15 @@
 <script>
 const PGN          = {{ game.pgn | tojson }};
 const PLAYER_COLOR = "{{ game.player_color }}";
-const PIECE_THEME  = 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png';
+const WIKI = {
+  wK:'4/42/Chess_klt45.svg', wQ:'1/15/Chess_qlt45.svg',
+  wR:'7/72/Chess_rlt45.svg', wB:'b/b1/Chess_blt45.svg',
+  wN:'7/70/Chess_nlt45.svg', wP:'4/45/Chess_plt45.svg',
+  bK:'f/f0/Chess_kdt45.svg', bQ:'4/47/Chess_qdt45.svg',
+  bR:'f/ff/Chess_rdt45.svg', bB:'9/98/Chess_bdt45.svg',
+  bN:'e/ef/Chess_ndt45.svg', bP:'c/c7/Chess_pdt45.svg',
+};
+const PIECE_THEME = (p) => 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
 
 // Build positions array from PGN
 const chess = new Chess();
@@ -299,7 +307,7 @@ let reviewData = null; // populated after analysis
 const board = Chessboard('replay-board', {
   position: positions[0].fen,
   orientation: PLAYER_COLOR,
-  pieceTheme: PIECE_THEME,
+  pieceTheme: PIECE_THEME,   // now a function, chessboard.js accepts both
 });
 
 // ── Navigation ────────────────────────────────────────────────

@@ -154,6 +154,73 @@
     #move-list      { max-height: 340px; columns: 1; }
     .game-controls  { grid-column: 3; grid-row: 2; max-width: none; flex-direction: column; }
   }
+
+  /* ── Promotion modal ── */
+  .promo-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+  .promo-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    min-width: 260px;
+  }
+  .promo-box h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .promo-pieces {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+  }
+  .promo-piece {
+    width: 60px; height: 60px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color .15s, background .15s;
+    padding: 4px;
+  }
+  .promo-piece:hover {
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+  .promo-piece img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .promo-piece span {
+    font-size: .65rem;
+    color: var(--muted);
+    display: block;
+    margin-top: 2px;
+  }
+  .promo-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .promo-label {
+    font-size: .7rem;
+    color: var(--muted);
+  }
 </style>
 {% endblock %}
 
@@ -186,6 +253,7 @@
 
 </div>
 
+<!-- Game-over modal -->
 <div class="modal-overlay" id="modal" style="display:none">
   <div class="modal-box">
     <h2 id="modal-title">Game Over</h2>
@@ -194,6 +262,14 @@
       <button id="modal-save" class="btn-primary">Save Game</button>
       <a href="{{ url_for('game.dashboard') }}" class="btn-outline">Dashboard</a>
     </div>
+  </div>
+</div>
+
+<!-- Promotion picker modal -->
+<div class="promo-overlay" id="promo-modal" style="display:none">
+  <div class="promo-box">
+    <h3>Promote Pawn</h3>
+    <div class="promo-pieces" id="promo-pieces"></div>
   </div>
 </div>
 {% endblock %}
@@ -207,14 +283,14 @@
   const BOT_ID    = "{{ bot or '' }}";
   const MY_COLOR  = "{{ color }}";
   let prevFen     = null;
-  let currentTurn = 'white';
+  let currentTurn = 'white';   // used in pass-and-play only
   const chess     = new Chess();
   const moveList  = document.getElementById('move-list');
 
   // ── State flags ───────────────────────────────────────────────
   let selectedSquare = null;   // square currently selected for click-move
-  let dragInProgress = false;  // true while a drag is happening
-  let botThinking    = false;  // true while waiting for bot response
+  let dragInProgress = false;  // true while a drag is active
+  let botThinking    = false;  // true while waiting for bot API response
 
   // ── Wikimedia SVG pieces ──────────────────────────────────────
   const WIKI = {
@@ -229,6 +305,49 @@
     return 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
   }
 
+  // ── Promotion helpers ─────────────────────────────────────────
+  // Returns true if the move from->to is a pawn promotion
+  function isPromotion(from, to) {
+    var piece = chess.get(from);
+    if (!piece || piece.type !== 'p') return false;
+    var toRank = to[1];
+    return (piece.color === 'w' && toRank === '8') ||
+           (piece.color === 'b' && toRank === '1');
+  }
+
+  // Show the promotion picker, resolve with chosen piece letter ('q','r','b','n')
+  function askPromotion(color) {
+    return new Promise(function(resolve) {
+      var pieces = [
+        { code: 'q', label: 'Queen'  },
+        { code: 'r', label: 'Rook'   },
+        { code: 'b', label: 'Bishop' },
+        { code: 'n', label: 'Knight' },
+      ];
+      var c = color === 'w' ? 'w' : 'b';
+      var container = document.getElementById('promo-pieces');
+      container.innerHTML = pieces.map(function(p) {
+        var pieceKey = c + p.code.toUpperCase();
+        var imgUrl   = pieceTheme(pieceKey);
+        return '<div class="promo-item">' +
+                 '<div class="promo-piece" data-piece="' + p.code + '">' +
+                   '<img src="' + imgUrl + '" alt="' + p.label + '" />' +
+                 '</div>' +
+                 '<span class="promo-label">' + p.label + '</span>' +
+               '</div>';
+      }).join('');
+
+      document.getElementById('promo-modal').style.display = 'flex';
+
+      container.querySelectorAll('.promo-piece').forEach(function(el) {
+        el.addEventListener('click', function() {
+          document.getElementById('promo-modal').style.display = 'none';
+          resolve(el.getAttribute('data-piece'));
+        }, { once: true });
+      });
+    });
+  }
+
   // ── Highlights ────────────────────────────────────────────────
   function clearHighlights() {
     $('#board .square-55d63').removeClass('highlight-selected highlight-move');
@@ -238,7 +357,7 @@
 
   function doSelectSquare(square) {
     clearHighlights();
-    const moves = chess.moves({ square: square, verbose: true });
+    var moves = chess.moves({ square: square, verbose: true });
     if (!moves.length) return;
     selectedSquare = square;
     $('#board .square-' + square).addClass('highlight-selected');
@@ -250,38 +369,53 @@
   }
 
   // ── Turn helpers ──────────────────────────────────────────────
+  function activeColorChar() {
+    // Which color is allowed to move right now
+    if (MODE === 'bot') return MY_COLOR[0];
+    return currentTurn[0];   // pass-and-play
+  }
+
   function isMyTurn() {
     if (chess.game_over()) return false;
     if (botThinking)       return false;
-    if (MODE === 'bot')    return chess.turn() === MY_COLOR[0];
-    return chess.turn() === currentTurn[0];
+    return chess.turn() === activeColorChar();
   }
 
-  function myColorChar() {
-    return MODE === 'bot' ? MY_COLOR[0] : currentTurn[0];
-  }
+  // ── Execute a move (async — handles promotion picker) ─────────
+  function executeMove(from, to, promotionPiece) {
+    // promotionPiece is undefined on first call;
+    // we'll re-enter after the picker resolves.
+    if (promotionPiece === undefined && isPromotion(from, to)) {
+      var movingColor = chess.get(from).color;
+      askPromotion(movingColor).then(function(piece) {
+        executeMove(from, to, piece);
+      });
+      return true;   // move started (picker pending)
+    }
 
-  // ── Execute a move (shared by click and drag) ─────────────────
-  function executeMove(from, to) {
     prevFen = chess.fen();
-    var move = chess.move({ from: from, to: to, promotion: 'q' });
-    if (!move) return false;
+    var moveObj = chess.move({
+      from: from,
+      to: to,
+      promotion: promotionPiece || 'q',
+    });
+    if (!moveObj) return false;
 
     board.position(chess.fen());
-    appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
+    var justMoved = moveObj.color === 'w' ? 'white' : 'black';
+    appendMove(moveObj.san, justMoved);
     checkGameOver();
 
-    if (MODE === 'bot' && !chess.game_over()) {
-      botThinking = true;
-      setStatus('Bot is thinking...');
-      setTimeout(function() { fetchBotMove(chess.fen()); }, 300);
-    } else if (MODE === 'pass_and_play') {
-      currentTurn = currentTurn === 'white' ? 'black' : 'white';
-      setStatus(capitalize(currentTurn) + "'s turn");
-    } else if (MODE === 'bot' && chess.game_over()) {
-      // already handled by checkGameOver
-    } else {
-      setStatus('Your turn');
+    if (!chess.game_over()) {
+      if (MODE === 'bot') {
+        botThinking = true;
+        setStatus('Bot is thinking...');
+        setTimeout(function() { fetchBotMove(chess.fen()); }, 300);
+      } else {
+        // pass-and-play: flip turn
+        currentTurn = currentTurn === 'white' ? 'black' : 'white';
+        setStatus(capitalize(currentTurn) + "'s turn");
+      }
     }
     return true;
   }
@@ -289,56 +423,79 @@
   // ── chessboard.js callbacks ───────────────────────────────────
 
   function onDragStart(source, piece) {
-    if (!isMyTurn())               return false;
-    if (piece[0] !== myColorChar()) return false;
-    // Starting a drag — clear any click-selection and set flag
+    if (!isMyTurn())                        return false;
+    if (piece[0] !== activeColorChar())     return false;
     clearHighlights();
     dragInProgress = true;
+    return true;
   }
 
   function onDrop(source, target) {
-    // Drop fires before onSnapEnd; mark drag done after a tick
-    var ok = executeMove(source, target);
+    if (source === target) {
+      dragInProgress = false;
+      return 'snapback';
+    }
+
+    // Promotion via drag: show picker, then apply
+    if (isPromotion(source, target)) {
+      var movingColor = chess.get(source).color;
+      // Snapback the piece visually while we wait for picker
+      askPromotion(movingColor).then(function(piece) {
+        var ok = executeMove(source, target, piece);
+        if (!ok) board.position(chess.fen());
+      });
+      dragInProgress = false;
+      return 'snapback';   // piece snaps back; we'll reposition after pick
+    }
+
+    var ok = executeMove(source, target, undefined);
     if (!ok) {
       dragInProgress = false;
       return 'snapback';
     }
-    // Keep dragInProgress = true; clear it in onSnapEnd
+    // dragInProgress cleared in onSnapEnd
   }
 
   function onSnapEnd() {
     board.position(chess.fen());
-    // Clear drag flag after a short delay so onSquareClick
-    // (which fires right after snapEnd) sees it and skips
     setTimeout(function() { dragInProgress = false; }, 50);
   }
 
   function onSquareClick(square) {
-    // Ignore clicks that are the tail end of a drag
-    if (dragInProgress) return;
+    if (dragInProgress) return;   // tail of a drag event, ignore
     if (!isMyTurn())    return;
 
-    // If a piece is already selected, try to move to this square
+    // Something already selected — try to move
     if (selectedSquare) {
       if (square === selectedSquare) {
         clearHighlights();
         return;
       }
-      var ok = executeMove(selectedSquare, square);
-      clearHighlights();
-      if (!ok) {
-        // Maybe they clicked a different own piece — select it instead
-        var p = chess.get(square);
-        if (p && p.color === myColorChar()) {
-          doSelectSquare(square);
-        }
+
+      var targetPiece = chess.get(square);
+      // If they clicked their own piece, re-select it instead of trying a move
+      if (targetPiece && targetPiece.color === activeColorChar()) {
+        doSelectSquare(square);
+        return;
+      }
+
+      // Validate the move exists before committing
+      var legalMoves = chess.moves({ square: selectedSquare, verbose: true });
+      var isLegal    = legalMoves.some(function(m) { return m.to === square; });
+
+      if (isLegal) {
+        var from = selectedSquare;
+        clearHighlights();
+        executeMove(from, square);   // promotion picker handled inside
+      } else {
+        clearHighlights();
       }
       return;
     }
 
-    // Nothing selected yet — select if it's the player's piece
-    var p = chess.get(square);
-    if (!p || p.color !== myColorChar()) return;
+    // Nothing selected — select this square if it belongs to the active player
+    var piece = chess.get(square);
+    if (!piece || piece.color !== activeColorChar()) return;
     doSelectSquare(square);
   }
 
@@ -354,7 +511,6 @@
     onSquareClick: onSquareClick,
   });
 
-  // Resize board to fill container
   function resizeBoard() {
     var wrapper = document.querySelector('.board-wrapper');
     var sz = Math.min(wrapper.clientWidth, 560);
@@ -375,13 +531,13 @@
       botThinking = false;
       if (data.error) { setStatus('Engine error: ' + data.error); return; }
       var move = chess.move({
-        from: data.move.slice(0,2),
-        to:   data.move.slice(2,4),
-        promotion: 'q'
+        from:      data.move.slice(0, 2),
+        to:        data.move.slice(2, 4),
+        promotion: data.move.length === 5 ? data.move[4] : 'q',
       });
       if (move) {
         board.position(chess.fen());
-        appendMove(move.san, chess.turn() === 'w' ? 'black' : 'white');
+        appendMove(move.san, move.color === 'w' ? 'white' : 'black');
         checkGameOver();
         if (!chess.game_over()) setStatus('Your turn');
       }
@@ -448,7 +604,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         pgn: chess.pgn(), result: result,
-        mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR
+        mode: MODE, bot_name: BOT_ID, player_color: MY_COLOR,
       }),
     })
     .then(function(r) { return r.json(); })
@@ -461,6 +617,7 @@
   }
 
   document.getElementById('btn-resign').onclick = function() {
+    if (chess.game_over()) return;
     showModal('You resigned.', 'Better luck next time.',
               MY_COLOR === 'white' ? '0-1' : '1-0');
   };

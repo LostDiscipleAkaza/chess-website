@@ -433,3 +433,11 @@ a:hover { color: var(--accent2); }
 }
 .empty-state { color: var(--muted); }
 .loading-text { color: var(--muted); }
+
+:root {
+  /* ... existing vars ... */
+  --radius-lg:  12px;
+  --text2:      #c0bdb5;
+  --accent-dim: rgba(201, 168, 76, 0.12);
+  --font-mono:  'JetBrains Mono', 'Fira Mono', 'Courier New', monospace;
+}

@@ -99,12 +99,21 @@ def detect_event(prev_fen: str | None, current_fen: str, bot_id: str) -> str:
         return 'default'
 
     # Promotion
-    for move in prev_board.legal_moves:
-        if move.promotion:
-            pushed = chess.Board(prev_fen)
-            pushed.push(move)
-            if pushed.fen() == current_fen:
-                return 'promotion'
+    # Promotion — check if a new queen/rook/bishop/knight appeared on back rank
+    def _piece_set(board):
+        return {(sq, str(board.piece_at(sq))) for sq in chess.SQUARES if board.piece_at(sq)}
+
+    prev_pieces = _piece_set(prev_board)
+    curr_pieces = _piece_set(curr_board)
+    appeared = curr_pieces - prev_pieces
+    for sq, piece_str in appeared:
+        rank = chess.square_rank(sq)
+        # piece_str is the string representation of the piece, take first char
+        pchar = piece_str[0].upper() if piece_str else ''
+        if rank in (0, 7) and pchar in ('Q', 'R', 'B', 'N'):
+            # A non-pawn appeared on a back rank = promotion
+            return 'promotion'
+        
 
     # Check
     if curr_board.is_check():

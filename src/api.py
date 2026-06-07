@@ -10,17 +10,13 @@ from engine import get_bot_move, detect_event
 from dialogue import get_dialogue_line
 from rating import update_player_rating, classify_move, build_style_profile, get_bot_rating
 import chess
-import chess.engine
 import chess.pgn
 import io
 import os
 
 api_bp = Blueprint('api', __name__)
 
-STOCKFISH_PATH = os.environ.get(
-    'STOCKFISH_PATH',
-    r'C:\Users\bhuvaneshwar\OneDrive\Desktop\chess website\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe'  # update this to your full path if needed
-)
+STOCKFISH_PATH = os.environ.get( 'STOCKFISH_PATH', 'stockfish')  # Default to 'stockfish' in PATH
 
 
 @api_bp.route('/move', methods=['POST'])
@@ -57,27 +53,7 @@ def bot_move():
 
 @api_bp.route('/review', methods=['POST'])
 def review_game():
-    """
-    Analyse a completed game PGN with Stockfish.
-    Returns per-move classifications and accuracy scores.
-
-    Request JSON:
-        { "pgn": "<PGN string>", "player_color": "white" }
-
-    Response JSON:
-        {
-          "moves": [
-            {
-              "san": "e4", "move_num": 1, "color": "white",
-              "cp_loss": 0, "classification": "best",
-              "symbol": "★", "color_hex": "#1bada6",
-              "eval_before": 30, "eval_after": 30
-            }, ...
-          ],
-          "white": { "accuracy": 94.2, "best": 12, "blunder": 0, ... },
-          "black": { "accuracy": 88.1, "best": 8, "blunder": 2, ... }
-        }
-    """
+    import requests as req
     data = request.get_json(force=True)
     pgn_str = data.get('pgn', '')
     player_color = data.get('player_color', 'white')
@@ -96,94 +72,74 @@ def review_game():
     white_classifications = []
     black_classifications = []
 
-    try:
-        with chess.engine.SimpleEngine.popen_uci(STOCKFISH_PATH) as engine:
-            board = game.board()
-            move_num = 1
+    board = game.board()
+    move_num = 1
 
-            for move in game.mainline_moves():
-                color = 'white' if board.turn == chess.WHITE else 'black'
+    for move in game.mainline_moves():
+        color = 'white' if board.turn == chess.WHITE else 'black'
+        fen_before = board.fen()
+        san = board.san(move)
+        board.push(move)
+        fen_after = board.fen()
 
-                # Evaluate before move
-                info_before = engine.analyse(board, chess.engine.Limit(depth=14))
-                score_before = info_before['score'].white()
-                cp_before = score_before.score(mate_score=10000)
+        # Evaluate before
+        cp_before = _eval_via_api(fen_before)
+        # Evaluate after
+        cp_after = _eval_via_api(fen_after)
 
-                # Make move
-                san = board.san(move)
-                board.push(move)
+        if cp_before is not None and cp_after is not None:
+            if color == 'white':
+                cp_loss = max(0, cp_before - cp_after)
+            else:
+                cp_loss = max(0, cp_after - cp_before)
+        else:
+            cp_loss = None
 
-                # Evaluate after move
-                info_after = engine.analyse(board, chess.engine.Limit(depth=14))
-                score_after = info_after['score'].white()
-                cp_after = score_after.score(mate_score=10000)
+        classification, symbol, color_hex = classify_move(cp_loss)
 
-                # Calculate centipawn loss from perspective of the player who moved
-                if cp_before is not None and cp_after is not None:
-                    if color == 'white':
-                        cp_loss = max(0, cp_before - cp_after)
-                    else:
-                        cp_loss = max(0, cp_after - cp_before)
-                else:
-                    cp_loss = None
+        move_entry = {
+            'san': san,
+            'move_num': move_num,
+            'color': color,
+            'cp_loss': cp_loss,
+            'classification': classification,
+            'symbol': symbol,
+            'color_hex': color_hex,
+            'eval_before': cp_before,
+            'eval_after': cp_after,
+        }
+        moves_data.append(move_entry)
 
-                classification, symbol, color_hex = classify_move(cp_loss)
-
-                move_entry = {
-                    'san': san,
-                    'move_num': move_num,
-                    'color': color,
-                    'cp_loss': cp_loss,
-                    'classification': classification,
-                    'symbol': symbol,
-                    'color_hex': color_hex,
-                    'eval_before': cp_before,
-                    'eval_after': cp_after,
-                }
-                moves_data.append(move_entry)
-
-                if color == 'white':
-                    white_classifications.append((classification, symbol, color_hex))
-                else:
-                    black_classifications.append((classification, symbol, color_hex))
-
-                if color == 'black':
-                    move_num += 1
-
-    except Exception as e:
-        return jsonify({'error': f'Analysis failed: {str(e)}'}), 500
+        if color == 'white':
+            white_classifications.append((classification, symbol, color_hex))
+        else:
+            black_classifications.append((classification, symbol, color_hex))
+            move_num += 1
 
     white_profile = build_style_profile(white_classifications, len(white_classifications))
     black_profile = build_style_profile(black_classifications, len(black_classifications))
 
-    # Update Elo based on analysis results
-    rating_info = {}
-    if current_user.is_authenticated:
-        try:
-            player_color = data.get('player_color', 'white')
-            result       = data.get('result', '*')
-            bot_id       = data.get('bot_id', '')
-            mode         = data.get('mode', 'bot')
-
-            # Get player's accuracy from the review
-            acc_data = white_profile if player_color == 'white' else black_profile
-            accuracy = acc_data.get('accuracy')
-
-            new_rating, change = update_player_rating(
-                current_user, result, mode,
-                bot_id=bot_id,
-                player_color=player_color,
-                accuracy=accuracy
-            )
-            rating_info = {'new_rating': new_rating, 'change': change}
-        except Exception:
-            pass
+    # NOTE: Elo is NOT updated here — it was already updated on /save.
     return jsonify({
         'moves': moves_data,
         'white': white_profile,
         'black': black_profile,
-        **rating_info,
     })
+
+
+def _eval_via_api(fen: str):
+    """Evaluate a position using chess-api.com. Returns centipawns or None."""
+    try:
+        resp = requests.post('https://chess-api.com/v1', json={'fen': fen, 'depth': 12}, timeout=10)
+        resp.raise_for_status()
+        d = resp.json()
+        if d.get('mate') is not None:
+            return None
+        cp = d.get('centipawns')
+        return int(cp) if cp is not None else None
+    except Exception:
+        return None
+    
 
 
 @api_bp.route('/save', methods=['POST'])
