@@ -5,7 +5,6 @@
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
 <style>
-  /* ── Responsive play layout ── */
   .play-page {
     display: flex;
     flex-direction: column;
@@ -15,7 +14,6 @@
     margin: 0 auto;
     padding: 0.5rem 0.75rem 2rem;
   }
-
   .board-wrapper {
     width: 100%;
     max-width: 560px;
@@ -24,17 +22,13 @@
     align-items: center;
     gap: 0.5rem;
   }
-
   #board { width: 100% !important; }
-
   .board-status {
     color: var(--muted);
     font-size: .9rem;
     text-align: center;
     min-height: 1.4em;
   }
-
-  /* Bot info bar */
   .bot-info-bar {
     width: 100%;
     max-width: 560px;
@@ -58,13 +52,7 @@
     font-weight: 700;
     flex-shrink: 0;
   }
-  .bot-name {
-    font-family: var(--font-head);
-    font-size: 1rem;
-    flex: 1;
-  }
-
-  /* Chat strip */
+  .bot-name { font-family: var(--font-head); font-size: 1rem; flex: 1; }
   .chat-strip {
     width: 100%;
     max-width: 560px;
@@ -84,8 +72,6 @@
     animation: fadeIn .3s ease;
   }
   @keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:none; } }
-
-  /* Move list */
   .move-history {
     width: 100%;
     max-width: 560px;
@@ -112,8 +98,6 @@
   }
   #move-list li { padding: .1rem 0; break-inside: avoid; }
   #move-list li.active { color: var(--accent); }
-
-  /* Controls */
   .game-controls {
     width: 100%;
     max-width: 560px;
@@ -122,7 +106,7 @@
   }
   .game-controls button { flex: 1; }
 
-  /* Square highlights */
+  /* ── Highlights ── */
   .square-55d63 { position: relative; }
   .highlight-selected { background: rgba(201,168,76,.65) !important; }
   .highlight-move     { background: rgba(201,168,76,.30) !important; }
@@ -137,7 +121,43 @@
     z-index: 5;
   }
 
-  /* Desktop side-by-side */
+  /* ── Promotion modal ── */
+  .promo-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000;
+  }
+  .promo-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+  }
+  .promo-box h3 {
+    font-family: var(--font-head);
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 1rem;
+  }
+  .promo-pieces { display: flex; gap: 0.75rem; justify-content: center; }
+  .promo-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .promo-piece {
+    width: 60px; height: 60px;
+    background: var(--surface2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color .15s, background .15s;
+    padding: 4px;
+  }
+  .promo-piece:hover { border-color: var(--accent); background: var(--surface); }
+  .promo-piece img { width: 100%; height: 100%; object-fit: contain; }
+  .promo-label { font-size: .7rem; color: var(--muted); }
+
+  /* ── Desktop grid ── */
   @media (min-width: 900px) {
     .play-page {
       display: grid;
@@ -153,73 +173,6 @@
     .move-history   { grid-column: 3; grid-row: 1; max-width: none; }
     #move-list      { max-height: 340px; columns: 1; }
     .game-controls  { grid-column: 3; grid-row: 2; max-width: none; flex-direction: column; }
-  }
-
-  /* ── Promotion modal ── */
-  .promo-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
-  }
-  .promo-box {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.5rem 2rem;
-    text-align: center;
-    min-width: 260px;
-  }
-  .promo-box h3 {
-    font-family: var(--font-head);
-    font-size: 1.1rem;
-    color: var(--accent);
-    margin-bottom: 1rem;
-  }
-  .promo-pieces {
-    display: flex;
-    gap: 0.75rem;
-    justify-content: center;
-  }
-  .promo-piece {
-    width: 60px; height: 60px;
-    background: var(--surface2);
-    border: 2px solid var(--border);
-    border-radius: 10px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color .15s, background .15s;
-    padding: 4px;
-  }
-  .promo-piece:hover {
-    border-color: var(--accent);
-    background: var(--surface);
-  }
-  .promo-piece img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-  .promo-piece span {
-    font-size: .65rem;
-    color: var(--muted);
-    display: block;
-    margin-top: 2px;
-  }
-  .promo-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-  }
-  .promo-label {
-    font-size: .7rem;
-    color: var(--muted);
   }
 </style>
 {% endblock %}
@@ -265,7 +218,7 @@
   </div>
 </div>
 
-<!-- Promotion picker modal -->
+<!-- Promotion picker -->
 <div class="promo-overlay" id="promo-modal" style="display:none">
   <div class="promo-box">
     <h3>Promote Pawn</h3>
@@ -279,21 +232,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.js"></script>
 <script>
-  const MODE      = "{{ mode }}";
-  const BOT_ID    = "{{ bot or '' }}";
-  const MY_COLOR  = "{{ color }}";
-  let prevFen     = null;
-  let currentTurn = 'white';   // used in pass-and-play only
-  const chess     = new Chess();
-  const moveList  = document.getElementById('move-list');
+  const MODE     = "{{ mode }}";
+  const BOT_ID   = "{{ bot or '' }}";
+  const MY_COLOR = "{{ color }}";
 
-  // ── State flags ───────────────────────────────────────────────
-  let selectedSquare = null;   // square currently selected for click-move
-  let dragInProgress = false;  // true while a drag is active
-  let botThinking    = false;  // true while waiting for bot API response
+  const chess    = new Chess();
+  const moveList = document.getElementById('move-list');
 
-  // ── Wikimedia SVG pieces ──────────────────────────────────────
-  const WIKI = {
+  // pass-and-play turn tracker
+  var ppTurn = 'white';
+
+  // guards
+  var selectedSquare = null;
+  var dragInProgress = false;
+  var botThinking    = false;
+  var prevFen        = null;
+
+  // ── Piece images (Wikimedia SVGs) ────────────────────────────
+  var WIKI = {
     wK:'4/42/Chess_klt45.svg', wQ:'1/15/Chess_qlt45.svg',
     wR:'7/72/Chess_rlt45.svg', wB:'b/b1/Chess_blt45.svg',
     wN:'7/70/Chess_nlt45.svg', wP:'4/45/Chess_plt45.svg',
@@ -305,105 +261,96 @@
     return 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
   }
 
-  // ── Promotion helpers ─────────────────────────────────────────
-  // Returns true if the move from->to is a pawn promotion
-  function isPromotion(from, to) {
-    var piece = chess.get(from);
-    if (!piece || piece.type !== 'p') return false;
-    var toRank = to[1];
-    return (piece.color === 'w' && toRank === '8') ||
-           (piece.color === 'b' && toRank === '1');
+  // ── Who is allowed to move right now ─────────────────────────
+  // Returns 'w' or 'b'
+  function activeColor() {
+    if (MODE === 'bot') return MY_COLOR[0];
+    return ppTurn[0];
   }
 
-  // Show the promotion picker, resolve with chosen piece letter ('q','r','b','n')
-  function askPromotion(color) {
-    return new Promise(function(resolve) {
-      var pieces = [
-        { code: 'q', label: 'Queen'  },
-        { code: 'r', label: 'Rook'   },
-        { code: 'b', label: 'Bishop' },
-        { code: 'n', label: 'Knight' },
-      ];
-      var c = color === 'w' ? 'w' : 'b';
-      var container = document.getElementById('promo-pieces');
-      container.innerHTML = pieces.map(function(p) {
-        var pieceKey = c + p.code.toUpperCase();
-        var imgUrl   = pieceTheme(pieceKey);
-        return '<div class="promo-item">' +
-                 '<div class="promo-piece" data-piece="' + p.code + '">' +
-                   '<img src="' + imgUrl + '" alt="' + p.label + '" />' +
-                 '</div>' +
-                 '<span class="promo-label">' + p.label + '</span>' +
-               '</div>';
-      }).join('');
-
-      document.getElementById('promo-modal').style.display = 'flex';
-
-      container.querySelectorAll('.promo-piece').forEach(function(el) {
-        el.addEventListener('click', function() {
-          document.getElementById('promo-modal').style.display = 'none';
-          resolve(el.getAttribute('data-piece'));
-        }, { once: true });
-      });
-    });
+  function canMove() {
+    if (chess.game_over()) return false;
+    if (botThinking)       return false;
+    return chess.turn() === activeColor();
   }
 
-  // ── Highlights ────────────────────────────────────────────────
+  // ── Highlights ───────────────────────────────────────────────
   function clearHighlights() {
     $('#board .square-55d63').removeClass('highlight-selected highlight-move');
     $('#board .dot-hint').remove();
     selectedSquare = null;
   }
 
-  function doSelectSquare(square) {
+  function selectSquare(sq) {
     clearHighlights();
-    var moves = chess.moves({ square: square, verbose: true });
-    if (!moves.length) return;
-    selectedSquare = square;
-    $('#board .square-' + square).addClass('highlight-selected');
-    moves.forEach(function(m) {
+    var legalTargets = chess.moves({ square: sq, verbose: true });
+    if (!legalTargets.length) return;
+    selectedSquare = sq;
+    $('#board .square-' + sq).addClass('highlight-selected');
+    legalTargets.forEach(function(m) {
       $('#board .square-' + m.to)
         .addClass('highlight-move')
         .append('<div class="dot-hint"></div>');
     });
   }
 
-  // ── Turn helpers ──────────────────────────────────────────────
-  function activeColorChar() {
-    // Which color is allowed to move right now
-    if (MODE === 'bot') return MY_COLOR[0];
-    return currentTurn[0];   // pass-and-play
+  // ── Promotion picker ─────────────────────────────────────────
+  function isPromoMove(from, to) {
+    var p = chess.get(from);
+    if (!p || p.type !== 'p') return false;
+    return (p.color === 'w' && to[1] === '8') ||
+           (p.color === 'b' && to[1] === '1');
   }
 
-  function isMyTurn() {
-    if (chess.game_over()) return false;
-    if (botThinking)       return false;
-    return chess.turn() === activeColorChar();
-  }
-
-  // ── Execute a move (async — handles promotion picker) ─────────
-  function executeMove(from, to, promotionPiece) {
-    // promotionPiece is undefined on first call;
-    // we'll re-enter after the picker resolves.
-    if (promotionPiece === undefined && isPromotion(from, to)) {
-      var movingColor = chess.get(from).color;
-      askPromotion(movingColor).then(function(piece) {
-        executeMove(from, to, piece);
+  function pickPromotion(color) {
+    return new Promise(function(resolve) {
+      var defs = [
+        { code:'q', label:'Queen'  },
+        { code:'r', label:'Rook'   },
+        { code:'b', label:'Bishop' },
+        { code:'n', label:'Knight' },
+      ];
+      var c = (color === 'w') ? 'w' : 'b';
+      var container = document.getElementById('promo-pieces');
+      container.innerHTML = defs.map(function(d) {
+        var key = c + d.code.toUpperCase();
+        return '<div class="promo-item">' +
+                 '<div class="promo-piece" data-code="' + d.code + '">' +
+                   '<img src="' + pieceTheme(key) + '" alt="' + d.label + '">' +
+                 '</div>' +
+                 '<span class="promo-label">' + d.label + '</span>' +
+               '</div>';
+      }).join('');
+      document.getElementById('promo-modal').style.display = 'flex';
+      container.querySelectorAll('.promo-piece').forEach(function(el) {
+        el.addEventListener('click', function() {
+          document.getElementById('promo-modal').style.display = 'none';
+          resolve(el.getAttribute('data-code'));
+        }, { once: true });
       });
-      return true;   // move started (picker pending)
+    });
+  }
+
+  // ── Core move executor ───────────────────────────────────────
+  // from, to: square strings.  promo: 'q'|'r'|'b'|'n'|undefined
+  // If promo is undefined and it's a promotion move, shows picker first.
+  // Returns true if the move was accepted (or pending picker), false if illegal.
+  function doMove(from, to, promo) {
+    // Promotion pending
+    if (promo === undefined && isPromoMove(from, to)) {
+      var movingColor = chess.get(from).color;
+      pickPromotion(movingColor).then(function(chosen) {
+        doMove(from, to, chosen);
+      });
+      return true;  // pending
     }
 
     prevFen = chess.fen();
-    var moveObj = chess.move({
-      from: from,
-      to: to,
-      promotion: promotionPiece || 'q',
-    });
-    if (!moveObj) return false;
+    var move = chess.move({ from: from, to: to, promotion: promo || 'q' });
+    if (!move) return false;
 
     board.position(chess.fen());
-    var justMoved = moveObj.color === 'w' ? 'white' : 'black';
-    appendMove(moveObj.san, justMoved);
+    appendMove(move.san);
     checkGameOver();
 
     if (!chess.game_over()) {
@@ -412,19 +359,18 @@
         setStatus('Bot is thinking...');
         setTimeout(function() { fetchBotMove(chess.fen()); }, 300);
       } else {
-        // pass-and-play: flip turn
-        currentTurn = currentTurn === 'white' ? 'black' : 'white';
-        setStatus(capitalize(currentTurn) + "'s turn");
+        // pass-and-play: flip
+        ppTurn = (ppTurn === 'white') ? 'black' : 'white';
+        setStatus(ppTurn.charAt(0).toUpperCase() + ppTurn.slice(1) + "'s turn");
       }
     }
     return true;
   }
 
-  // ── chessboard.js callbacks ───────────────────────────────────
-
+  // ── chessboard.js drag callbacks ─────────────────────────────
   function onDragStart(source, piece) {
-    if (!isMyTurn())                        return false;
-    if (piece[0] !== activeColorChar())     return false;
+    if (!canMove())               return false;
+    if (piece[0] !== activeColor()) return false;
     clearHighlights();
     dragInProgress = true;
     return true;
@@ -436,19 +382,18 @@
       return 'snapback';
     }
 
-    // Promotion via drag: show picker, then apply
-    if (isPromotion(source, target)) {
+    // Promotion via drag: snap back visually, show picker, then apply
+    if (isPromoMove(source, target)) {
       var movingColor = chess.get(source).color;
-      // Snapback the piece visually while we wait for picker
-      askPromotion(movingColor).then(function(piece) {
-        var ok = executeMove(source, target, piece);
+      pickPromotion(movingColor).then(function(chosen) {
+        var ok = doMove(source, target, chosen);
         if (!ok) board.position(chess.fen());
       });
       dragInProgress = false;
-      return 'snapback';   // piece snaps back; we'll reposition after pick
+      return 'snapback';
     }
 
-    var ok = executeMove(source, target, undefined);
+    var ok = doMove(source, target, undefined);
     if (!ok) {
       dragInProgress = false;
       return 'snapback';
@@ -461,45 +406,48 @@
     setTimeout(function() { dragInProgress = false; }, 50);
   }
 
+  // ── chessboard.js click callback ─────────────────────────────
   function onSquareClick(square) {
-    if (dragInProgress) return;   // tail of a drag event, ignore
-    if (!isMyTurn())    return;
+    if (dragInProgress) return;   // end of a drag, ignore
+    if (!canMove())     return;
 
-    // Something already selected — try to move
-    if (selectedSquare) {
+    var clickedPiece = chess.get(square);
+
+    // ── Case 1: a piece is already selected ──
+    if (selectedSquare !== null) {
+
+      // Clicked the same square → deselect
       if (square === selectedSquare) {
         clearHighlights();
         return;
       }
 
-      var targetPiece = chess.get(square);
-      // If they clicked their own piece, re-select it instead of trying a move
-      if (targetPiece && targetPiece.color === activeColorChar()) {
-        doSelectSquare(square);
+      // Clicked another own piece → re-select it
+      if (clickedPiece && clickedPiece.color === activeColor()) {
+        selectSquare(square);
         return;
       }
 
-      // Validate the move exists before committing
-      var legalMoves = chess.moves({ square: selectedSquare, verbose: true });
-      var isLegal    = legalMoves.some(function(m) { return m.to === square; });
+      // Otherwise try to move there
+      var legalNow = chess.moves({ square: selectedSquare, verbose: true });
+      var legal    = legalNow.some(function(m) { return m.to === square; });
 
-      if (isLegal) {
-        var from = selectedSquare;
-        clearHighlights();
-        executeMove(from, square);   // promotion picker handled inside
-      } else {
-        clearHighlights();
+      var from = selectedSquare;
+      clearHighlights();   // clear before doMove so state is clean
+
+      if (legal) {
+        doMove(from, square);   // promotion picker handled inside doMove
       }
+      // if illegal, just deselect (clearHighlights already called)
       return;
     }
 
-    // Nothing selected — select this square if it belongs to the active player
-    var piece = chess.get(square);
-    if (!piece || piece.color !== activeColorChar()) return;
-    doSelectSquare(square);
+    // ── Case 2: nothing selected yet ──
+    if (!clickedPiece || clickedPiece.color !== activeColor()) return;
+    selectSquare(square);
   }
 
-  // ── Board init ────────────────────────────────────────────────
+  // ── Board init ───────────────────────────────────────────────
   var board = Chessboard('board', {
     draggable:     true,
     position:      'start',
@@ -519,7 +467,7 @@
   resizeBoard();
   window.addEventListener('resize', resizeBoard);
 
-  // ── Bot move fetch ────────────────────────────────────────────
+  // ── Bot API ──────────────────────────────────────────────────
   function fetchBotMove(fen) {
     fetch('/api/move', {
       method: 'POST',
@@ -530,14 +478,15 @@
     .then(function(data) {
       botThinking = false;
       if (data.error) { setStatus('Engine error: ' + data.error); return; }
+      var uci  = data.move;
       var move = chess.move({
-        from:      data.move.slice(0, 2),
-        to:        data.move.slice(2, 4),
-        promotion: data.move.length === 5 ? data.move[4] : 'q',
+        from:      uci.slice(0, 2),
+        to:        uci.slice(2, 4),
+        promotion: uci.length === 5 ? uci[4] : 'q',
       });
       if (move) {
         board.position(chess.fen());
-        appendMove(move.san, move.color === 'w' ? 'white' : 'black');
+        appendMove(move.san);
         checkGameOver();
         if (!chess.game_over()) setStatus('Your turn');
       }
@@ -549,11 +498,10 @@
     });
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
-  function appendMove(san, color) {
+  // ── UI helpers ───────────────────────────────────────────────
+  function appendMove(san) {
     var li = document.createElement('li');
     li.textContent = san;
-    li.className   = color;
     moveList.appendChild(li);
     moveList.scrollTop = moveList.scrollHeight;
   }
@@ -570,8 +518,6 @@
   function setStatus(msg) {
     document.getElementById('board-status').textContent = msg;
   }
-
-  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   function checkGameOver() {
     if (!chess.game_over()) return;
@@ -625,7 +571,7 @@
     window.location.reload();
   };
 
-  // ── Start ─────────────────────────────────────────────────────
+  // ── Start ────────────────────────────────────────────────────
   if (MODE === 'bot' && BOT_ID) {
     fetch('/api/bots')
       .then(function(r) { return r.json(); })
