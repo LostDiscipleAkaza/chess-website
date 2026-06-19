@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "So, you have claimed the throne.",
+    "Now face the one who created the path itself."
+  ],
+
+  "blunder": [
+    "After conquering kings, this is the move you choose? Fascinating.",
+    "I have witnessed empires rise and fall. None collapsed as suddenly as your position.",
+    "Somewhere across the cosmos, an ancient star exploded solely to warn me about that move."
+  ],
+
+  "check": [
+    "Check. Even the stars saw this coming."
+  ],
+
+  "capture": [
+    "Another piece falls. The universe remains predictable."
+  ],
+
+  "promotion": [
+    "A new queen. Reality itself remains unimpressed."
+  ],
+
+  "default": [
+    "Before there were Monarchs, there was only me.",
+    "I forged the trials you conquered.",
+    "Generations of rulers have stood where you stand.",
+    "Some sought power.",
+    "Some sought glory.",
+    "A few sought wisdom.",
+    "All eventually faced this board.",
+    "And all were tested."
+  ],
+
+  "victory": [
+    "You have conquered a kingdom. But not yet yourself.",
+    "I calculated billions of futures. Not one prepared me for someone reaching this far while playing like that."
+  ],
+
+  "defeat": [
+    "At last... someone has surpassed me.",
+    "The game is yours now."
+  ]
+}

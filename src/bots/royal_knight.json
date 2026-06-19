@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "Few earn the right to bear this title.",
+    "Let us see if you belong among legends."
+  ],
+
+  "blunder": [
+    "The kingdom knighted me for valor. They'd knight you for accidental entertainment.",
+    "I searched for your strategy. After careful investigation, I've declared it missing.",
+    "Somewhere, a court jester just got promoted after witnessing that move."
+  ],
+
+  "check": [
+    "Check. Legends are not built on moves like yours."
+  ],
+
+  "capture": [
+    "The crown appreciates your donation."
+  ],
+
+  "promotion": [
+    "A new queen. Pity she arrived to witness this position."
+  ],
+
+  "default": [
+    "I was knighted before the Monarch himself.",
+    "It was the proudest day of my life.",
+    "Yet the title changed less than I expected.",
+    "People saw a hero.",
+    "I still saw the same soldier in the mirror.",
+    "Titles don't create greatness.",
+    "They recognize it.",
+    "Never forget that."
+  ],
+
+  "victory": [
+    "A title must be earned. You are not ready for this one.",
+    "A decorative suit of armor would've put up a stronger defense."
+  ],
+
+  "defeat": [
+    "You've earned my respect.",
+    "Continue onward, future champion."
+  ]
+}

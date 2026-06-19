@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "A soldier fights for himself.",
+    "A leader fights for everyone under his command."
+  ],
+
+  "blunder": [
+    "If I made decisions like that, my squad would've promoted a bucket to command.",
+    "Your pieces aren't working together. They're filing formal complaints against each other.",
+    "That move had the confidence of a genius and the results of a kitchen accident."
+  ],
+
+  "check": [
+    "Check. Your army seems just as surprised as your king."
+  ],
+
+  "capture": [
+    "And there goes another soldier under your command."
+  ],
+
+  "promotion": [
+    "A promotion. At least someone in your ranks is doing their job."
+  ],
+
+  "default": [
+    "My promotion came after a difficult campaign.",
+    "Most remember the victory.",
+    "I remember the soldiers who never returned.",
+    "Leadership sounded glorious when I was young.",
+    "The truth is far heavier.",
+    "Every mistake becomes someone else's burden.",
+    "Every decision carries a cost.",
+    "That's what leadership taught me."
+  ],
+
+  "victory": [
+    "Skill alone isn't enough. Learn responsibility before seeking higher ranks.",
+    "I've seen headless chickens coordinate an attack better than that."
+  ],
+
+  "defeat": [
+    "You've proven you can lead your own path.",
+    "Don't waste that gift."
+  ]
+}

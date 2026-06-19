@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "The battlefield isn't won by strength alone.",
+    "Let's see how well you can read the path ahead."
+  ],
+
+  "blunder": [
+    "I spent three moves setting that trap. You sprinted into it like it was offering free gold.",
+    "I've tracked drunk bandits through a sandstorm. Their plans made more sense than yours.",
+    "Your strategy seems to begin with hope and end with regret."
+  ],
+
+  "check": [
+    "Check. You never saw it coming, did you?"
+  ],
+
+  "capture": [
+    "Scouts spot weaknesses. Yours was visible from miles away."
+  ],
+
+  "promotion": [
+    "A promotion. Unlike your king, at least one thing is advancing."
+  ],
+
+  "default": [
+    "I spent years scouting the kingdom's borders.",
+    "I've crossed forests, deserts, and frozen mountains.",
+    "While others chased promotions, I chased horizons.",
+    "I learned that information wins more wars than steel.",
+    "Every village has its stories.",
+    "Every soldier has their regrets.",
+    "The world is much larger than the capital.",
+    "Remember that as you climb."
+  ],
+
+  "victory": [
+    "You focus too much on what's in front of you. Learn to see further.",
+    "Have you considered a career in turnip observation? The turnips might object, but it's worth trying."
+  ],
+
+  "defeat": [
+    "Impressive. You've got sharp eyes.",
+    "They'll serve you well in the battles ahead."
+  ]
+}

@@ -11,29 +11,62 @@ API_URL = "https://chess-api.com/v1"
 BLUNDER_THRESHOLD = 200
 
 BOT_PROFILES = {
-    'rookie_riley': {
-        'depth': 1,
-        'maxThinkingTime': 10,
-        'error_chance': 0.4,   # 40% random move = ~400 Elo feel
-    },
-    'balanced_bob': {
-        'depth': 8,
-        'maxThinkingTime': 50,
-        'error_chance': 0.0,
-    },
-    'aggressive_alex': {
-        'depth': 12,
-        'maxThinkingTime': 80,
-        'error_chance': 0.0,
-    },
-    'grandmaster_grace': {
-        'depth': 18,
-        'maxThinkingTime': 100,
-        'error_chance': 0.0,
-    },
+    'recruit': {
+    'depth': 1,
+    'maxThinkingTime': 50,
+    'error_chance': 0.50,
+},
+
+'guard': {
+    'depth': 2,
+    'maxThinkingTime': 80,
+    'error_chance': 0.35,
+},
+
+'scout': {
+    'depth': 4,
+    'maxThinkingTime': 120,
+    'error_chance': 0.20,
+},
+
+'squad_leader': {
+    'depth': 6,
+    'maxThinkingTime': 200,
+    'error_chance': 0.10,
+},
+
+'field_captain': {
+    'depth': 8,
+    'maxThinkingTime': 350,
+    'error_chance': 0.05,
+},
+
+'royal_knight': {
+    'depth': 12,
+    'maxThinkingTime': 800,
+    'error_chance': 0.01,
+},
+
+'grand_marshal': {
+    'depth': 16,
+    'maxThinkingTime': 1500,
+    'error_chance': 0.005,
+},
+
+'monarch': {
+    'depth': 20,
+    'maxThinkingTime': 2500,
+    'error_chance': 0.002,
+},
+
+'sovereign': {
+    'depth': 24,
+    'maxThinkingTime': 4000,
+    'error_chance': 0.0,
+}
 }
 
-DEFAULT_PROFILE = BOT_PROFILES['balanced_bob']
+DEFAULT_PROFILE = BOT_PROFILES['recruit']
 
 
 def _get_profile(bot_id: str) -> dict:
@@ -98,22 +131,26 @@ def detect_event(prev_fen: str | None, current_fen: str, bot_id: str) -> str:
     except ValueError:
         return 'default'
 
-    # Promotion
-    # Promotion — check if a new queen/rook/bishop/knight appeared on back rank
+    # Promotion — fires only when the side that JUST MOVED (prev_board.turn)
+    # is the one whose pawn promoted. prev_board.turn is the bot's color here
+    # since this function is now called with (fen_before_bot_move, fen_after).
     def _piece_set(board):
         return {(sq, str(board.piece_at(sq))) for sq in chess.SQUARES if board.piece_at(sq)}
+
+    mover_color = prev_board.turn  # True = white just moved, False = black just moved
 
     prev_pieces = _piece_set(prev_board)
     curr_pieces = _piece_set(curr_board)
     appeared = curr_pieces - prev_pieces
     for sq, piece_str in appeared:
         rank = chess.square_rank(sq)
-        # piece_str is the string representation of the piece, take first char
-        pchar = piece_str[0].upper() if piece_str else ''
-        if rank in (0, 7) and pchar in ('Q', 'R', 'B', 'N'):
-            # A non-pawn appeared on a back rank = promotion
+        if not piece_str:
+            continue
+        pchar = piece_str.upper()
+        piece_color = chess.WHITE if piece_str.isupper() else chess.BLACK
+        if rank in (0, 7) and pchar in ('Q', 'R', 'B', 'N') and piece_color == mover_color:
+            # A non-pawn appeared on a back rank, placed by the side that moved
             return 'promotion'
-        
 
     # Check
     if curr_board.is_check():

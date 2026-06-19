@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "Greetings. I guard the western gates of the capital.",
+    "If you wish to climb higher, you'll have to get past me first."
+  ],
+
+  "blunder": [
+    "You left that piece hanging so openly I thought it was a charitable donation.",
+    "I've spent years guarding this gate. You're the first person I've seen lock themselves out.",
+    "If poor decisions were weapons, you'd be the kingdom's greatest arsenal."
+  ],
+
+  "check": [
+    "Check. The gates are closed, and your king is on the wrong side of them."
+  ],
+
+  "capture": [
+    "I'll be taking that. You practically handed me the keys."
+  ],
+
+  "promotion": [
+    "Another queen? At this rate you'll conquer the board before you conquer these gates."
+  ],
+
+  "default": [
+    "I was once a recruit like many others.",
+    "I dreamed of becoming a knight.",
+    "Years passed, but my talent never matched my ambition.",
+    "Eventually, I accepted my place as a city guard.",
+    "At first I felt defeated.",
+    "But protecting the people became a purpose of its own.",
+    "Not every dream changes the world.",
+    "Some simply keep it standing."
+  ],
+
+  "victory": [
+    "The road ahead is much harder than this. Return when your sword is sharper.",
+    "I once lost an argument to a wooden fence. The fence still defended itself better than you."
+  ],
+
+  "defeat": [
+    "Well fought. Perhaps you'll reach the heights I never could.",
+    "Keep moving forward."
+  ]
+}

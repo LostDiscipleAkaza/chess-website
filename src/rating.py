@@ -24,16 +24,21 @@ def calculate_new_rating(player_rating, opponent_rating, score):
 
 def get_bot_rating(bot_id):
     bot_ratings = {
-        'rookie_riley':     400,
-        'balanced_bob':     1200,
-        'aggressive_alex':  1800,
-        'grandmaster_grace': 2800,
+        'recruit':        400,
+        'guard':          700,
+        'scout':          1000,
+        'squad_leader':   1300,
+        'field_captain':  1700,
+        'royal_knight':   2100,
+        'grand_marshal':  2500,
+        'monarch':        2900,
+        'sovereign':      3200,
     }
     return bot_ratings.get(bot_id, 1200)
 
 
 def update_player_rating(user, result, mode, bot_id=None,
-                          player_color='white', accuracy=None):
+    player_color='white', accuracy=None):
     """
     Update Elo after game. If accuracy provided, adjust K-factor:
     - High accuracy (>85%) → bigger reward for wins
@@ -49,7 +54,7 @@ def update_player_rating(user, result, mode, bot_id=None,
     if result == '1/2-1/2':
         score = 0.5
     elif (result == '1-0' and player_color == 'white') or \
-         (result == '0-1' and player_color == 'black'):
+        (result == '0-1' and player_color == 'black'):
         score = 1.0
     else:
         score = 0.0

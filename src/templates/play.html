@@ -102,9 +102,25 @@
     width: 100%;
     max-width: 560px;
     display: flex;
+    flex-wrap: wrap;
     gap: 0.75rem;
   }
-  .game-controls button { flex: 1; }
+  .game-controls button { 
+    flex: 1 1 calc(50% - 0.375rem);
+    min-height: 44px;
+  }
+  .game-controls #btn-settings {
+    flex: 1 1 100%;
+  }
+
+  /* ── Settings modal ── */
+  #settings-modal .modal-box {
+    animation: slideUp .25s ease-out;
+  }
+  @keyframes slideUp { 
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 
   /* ── Highlights ── */
   .square-55d63 { position: relative; }
@@ -120,6 +136,35 @@
     pointer-events: none;
     z-index: 5;
   }
+
+  /* ── Board themes ──────────────────────────────────────────── */
+  /* chessboard.js assigns .white-1e1d7 / .black-3c85d to squares.
+     We override those colors per theme via a data attribute on #board. */
+
+  /* Classic Gold (default) */
+  #board[data-board-theme="classic"] .white-1e1d7 { background: #f0ead6 !important; }
+  #board[data-board-theme="classic"] .black-3c85d { background: #b58863 !important; }
+
+  /* Chess.com Green */
+  #board[data-board-theme="green"] .white-1e1d7 { background: #ebecd0 !important; }
+  #board[data-board-theme="green"] .black-3c85d { background: #779556 !important; }
+  #board[data-board-theme="green"] .highlight-selected { background: rgba(255,255,51,.55) !important; }
+  #board[data-board-theme="green"] .highlight-move     { background: rgba(255,255,51,.30) !important; }
+  #board[data-board-theme="green"] .dot-hint           { background: rgba(255,255,51,.75); }
+
+  /* Walnut Wood */
+  #board[data-board-theme="walnut"] .white-1e1d7 { background: #d8b78c !important; }
+  #board[data-board-theme="walnut"] .black-3c85d { background: #7c4a2d !important; }
+  #board[data-board-theme="walnut"] .highlight-selected { background: rgba(255,200,100,.55) !important; }
+  #board[data-board-theme="walnut"] .highlight-move     { background: rgba(255,200,100,.30) !important; }
+  #board[data-board-theme="walnut"] .dot-hint           { background: rgba(255,200,100,.80); }
+
+  /* Cool Blue */
+  #board[data-board-theme="blue"] .white-1e1d7 { background: #dee3e6 !important; }
+  #board[data-board-theme="blue"] .black-3c85d { background: #4b7399 !important; }
+  #board[data-board-theme="blue"] .highlight-selected { background: rgba(173,216,255,.6) !important; }
+  #board[data-board-theme="blue"] .highlight-move     { background: rgba(173,216,255,.32) !important; }
+  #board[data-board-theme="blue"] .dot-hint           { background: rgba(173,216,255,.85); }
 
   /* ── Promotion modal ── */
   .promo-overlay {
@@ -173,6 +218,8 @@
     .move-history   { grid-column: 3; grid-row: 1; max-width: none; }
     #move-list      { max-height: 340px; columns: 1; }
     .game-controls  { grid-column: 3; grid-row: 2; max-width: none; flex-direction: column; }
+    .game-controls button { flex: 1 1 auto; }
+    .game-controls #btn-settings { flex: 1 1 auto; }
   }
 </style>
 {% endblock %}
@@ -190,7 +237,7 @@
        style="{{ 'display:none' if mode == 'pass_and_play' }}"></div>
 
   <div class="board-wrapper">
-    <div id="board"></div>
+    <div id="board" data-board-theme="classic"></div>
     <div class="board-status" id="board-status">Waiting...</div>
   </div>
 
@@ -202,6 +249,7 @@
   <div class="game-controls">
     <button id="btn-resign" class="btn-outline btn-danger">Resign</button>
     <button id="btn-new"    class="btn-outline">New Game</button>
+    <button id="btn-settings" class="btn-outline">⚙️ Settings</button>
   </div>
 
 </div>
@@ -225,6 +273,62 @@
     <div class="promo-pieces" id="promo-pieces"></div>
   </div>
 </div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settings-modal" style="display:none">
+  <div class="modal-box" style="max-width: 400px;">
+    <h2 style="margin-top: 0;">⚙️ Game Settings</h2>
+    
+    <div style="margin: 1.2rem 0;">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Board Theme</label>
+      <select id="board-theme" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); cursor: pointer;">
+        <option value="classic">Classic Gold</option>
+        <option value="green">Chess.com Green</option>
+        <option value="walnut">Walnut Wood</option>
+        <option value="blue">Cool Blue</option>
+      </select>
+      <small style="color: var(--muted); display: block; margin-top: 0.3rem;">Choose your board color scheme</small>
+    </div>
+
+    <div style="margin: 1.2rem 0;">
+      <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">Piece Movement Style</label>
+      <select id="movement-style" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); cursor: pointer;">
+        <option value="drag">Drag only</option>
+        <option value="click">Click-to-move only</option>
+        <option value="both">Both (drag & click)</option>
+      </select>
+      <small style="color: var(--muted); display: block; margin-top: 0.3rem;">Choose how you prefer to move pieces</small>
+    </div>
+
+    <div style="margin: 1.2rem 0;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none;">
+        <input type="checkbox" id="highlight-moves" style="cursor: pointer;" checked>
+        <span>Show legal move hints</span>
+      </label>
+      <small style="color: var(--muted); display: block; margin-top: 0.3rem; margin-left: 1.6rem;">Display dots on possible squares</small>
+    </div>
+
+    <div style="margin: 1.2rem 0;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none;">
+        <input type="checkbox" id="flip-board" style="cursor: pointer;">
+        <span>Flip board perspective</span>
+      </label>
+      <small style="color: var(--muted); display: block; margin-top: 0.3rem; margin-left: 1.6rem;">View from the opposite side</small>
+    </div>
+
+    <div style="margin: 1.2rem 0;">
+      <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; user-select: none;">
+        <input type="checkbox" id="sound-enabled" style="cursor: pointer;" checked>
+        <span>Sound effects</span>
+      </label>
+      <small style="color: var(--muted); display: block; margin-top: 0.3rem; margin-left: 1.6rem;">Play sounds for moves (future)</small>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+      <button id="settings-close" class="btn-primary" style="flex: 1;">Done</button>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -239,16 +343,13 @@
   const chess    = new Chess();
   const moveList = document.getElementById('move-list');
 
-  // pass-and-play turn tracker
-  var ppTurn = 'white';
-
-  // guards
+  var ppTurn         = 'white';
   var selectedSquare = null;
-  var dragInProgress = false;
   var botThinking    = false;
   var prevFen        = null;
+  var isDragging     = false;
 
-  // ── Piece images (Wikimedia SVGs) ────────────────────────────
+  // ── Piece images ─────────────────────────────────────────────
   var WIKI = {
     wK:'4/42/Chess_klt45.svg', wQ:'1/15/Chess_qlt45.svg',
     wR:'7/72/Chess_rlt45.svg', wB:'b/b1/Chess_blt45.svg',
@@ -261,8 +362,6 @@
     return 'https://upload.wikimedia.org/wikipedia/commons/' + WIKI[p];
   }
 
-  // ── Who is allowed to move right now ─────────────────────────
-  // Returns 'w' or 'b'
   function activeColor() {
     if (MODE === 'bot') return MY_COLOR[0];
     return ppTurn[0];
@@ -272,6 +371,86 @@
     if (chess.game_over()) return false;
     if (botThinking)       return false;
     return chess.turn() === activeColor();
+  }
+
+  // ── Dialogue system ──────────────────────────────────────────
+  // Every line across every category is shown AT MOST ONCE per game.
+  // Once a category's lines are exhausted, that category goes silent
+  // for the rest of the game (no repeats, no wraparound).
+  // Greeting plays first (one line every 3s). Default story lines play
+  // every 4 bot moves (move 0, 4, 8, 12...). Check/capture/promotion/
+  // blunder interrupt with their own unused line when triggered.
+  // Victory/defeat play all remaining unused lines on game end.
+
+  var botDialogue   = null;   // raw JSON from /api/bot_dialogue
+  var greetingIdx   = 0;
+  var defaultIdx    = 0;
+  var eventIdx      = { check: 0, capture: 0, promotion: 0, blunder: 0 };
+  var greetingDone  = false;
+  var botMoveCount  = 0;      // counts bot moves only
+  var nextDefaultAt = 0;      // next bot-move-count at which default fires
+  var DEFAULT_GAP   = 4;      // moves between default lines
+
+  function loadBotDialogue() {
+    if (!BOT_ID) return;
+    fetch('/api/bot_dialogue/' + BOT_ID)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        botDialogue = data;
+        showNextGreeting();
+      });
+  }
+
+  function showNextGreeting() {
+    if (!botDialogue) return;
+    var lines = botDialogue.greeting || [];
+    if (greetingIdx < lines.length) {
+      addChat(lines[greetingIdx]);
+      greetingIdx++;
+      if (greetingIdx < lines.length) {
+        setTimeout(showNextGreeting, 3000);
+      } else {
+        greetingDone = true;
+      }
+    } else {
+      greetingDone = true;
+    }
+  }
+
+  // Returns true if a line was shown, false if that category is exhausted.
+  function showEventDialogue(event) {
+    if (!botDialogue) return false;
+    var lines = botDialogue[event] || [];
+    var idx = eventIdx[event];
+    if (idx >= lines.length) return false;  // exhausted — stay silent
+    addChat(lines[idx]);
+    eventIdx[event] = idx + 1;
+    return true;
+  }
+
+  // Called once per bot move (counter already advanced by caller). Fires a
+  // default story line only at the scheduled gap, and only if lines remain.
+  function maybeShowDefaultLine() {
+    if (!botDialogue || !greetingDone) return;
+
+    var lines = botDialogue.default || [];
+    if (defaultIdx >= lines.length) return;  // exhausted — stay silent forever
+    if (botMoveCount < nextDefaultAt) return;
+
+    addChat(lines[defaultIdx]);
+    defaultIdx++;
+    nextDefaultAt = botMoveCount + DEFAULT_GAP;
+  }
+
+  function showEndDialogue(botWon) {
+    if (!botDialogue) return;
+    var key = botWon ? 'victory' : 'defeat';
+    var lines = botDialogue[key] || [];
+    // Show all lines, 2s apart (these are dedicated end-of-game lines,
+    // separate pool from default/event lines, so no exhaustion check needed).
+    lines.forEach(function(line, i) {
+      setTimeout(function() { addChat(line); }, i * 2000);
+    });
   }
 
   // ── Highlights ───────────────────────────────────────────────
@@ -287,11 +466,13 @@
     if (!legalTargets.length) return;
     selectedSquare = sq;
     $('#board .square-' + sq).addClass('highlight-selected');
-    legalTargets.forEach(function(m) {
-      $('#board .square-' + m.to)
-        .addClass('highlight-move')
-        .append('<div class="dot-hint"></div>');
-    });
+    if (gameSettings.highlightMoves) {  // ← Respect the setting
+      legalTargets.forEach(function(m) {
+        $('#board .square-' + m.to)
+          .addClass('highlight-move')
+          .append('<div class="dot-hint"></div>');
+      });
+    }
   }
 
   // ── Promotion picker ─────────────────────────────────────────
@@ -332,24 +513,24 @@
   }
 
   // ── Core move executor ───────────────────────────────────────
-  // from, to: square strings.  promo: 'q'|'r'|'b'|'n'|undefined
-  // If promo is undefined and it's a promotion move, shows picker first.
-  // Returns true if the move was accepted (or pending picker), false if illegal.
   function doMove(from, to, promo) {
-    // Promotion pending
     if (promo === undefined && isPromoMove(from, to)) {
       var movingColor = chess.get(from).color;
       pickPromotion(movingColor).then(function(chosen) {
         doMove(from, to, chosen);
       });
-      return true;  // pending
+      return true;
     }
 
     prevFen = chess.fen();
     var move = chess.move({ from: from, to: to, promotion: promo || 'q' });
     if (!move) return false;
 
-    board.position(chess.fen());
+    // Only update board if not dragging (drag handles visual update via chessboard.js)
+    if (!isDragging) {
+      board.position(chess.fen());
+    }
+    
     appendMove(move.san);
     checkGameOver();
 
@@ -359,7 +540,6 @@
         setStatus('Bot is thinking...');
         setTimeout(function() { fetchBotMove(chess.fen()); }, 300);
       } else {
-        // pass-and-play: flip
         ppTurn = (ppTurn === 'white') ? 'black' : 'white';
         setStatus(ppTurn.charAt(0).toUpperCase() + ppTurn.slice(1) + "'s turn");
       }
@@ -367,97 +547,48 @@
     return true;
   }
 
-  // ── chessboard.js drag callbacks ─────────────────────────────
-  function onDragStart(source, piece) {
-    if (!canMove())               return false;
-    if (piece[0] !== activeColor()) return false;
-    clearHighlights();
-    dragInProgress = true;
-    return true;
-  }
-
-  function onDrop(source, target) {
-    if (source === target) {
-      dragInProgress = false;
-      return 'snapback';
-    }
-
-    // Promotion via drag: snap back visually, show picker, then apply
-    if (isPromoMove(source, target)) {
-      var movingColor = chess.get(source).color;
-      pickPromotion(movingColor).then(function(chosen) {
-        var ok = doMove(source, target, chosen);
-        if (!ok) board.position(chess.fen());
-      });
-      dragInProgress = false;
-      return 'snapback';
-    }
-
-    var ok = doMove(source, target, undefined);
-    if (!ok) {
-      dragInProgress = false;
-      return 'snapback';
-    }
-    // dragInProgress cleared in onSnapEnd
-  }
-
-  function onSnapEnd() {
-    board.position(chess.fen());
-    setTimeout(function() { dragInProgress = false; }, 50);
-  }
-
-  // ── chessboard.js click callback ─────────────────────────────
-  function onSquareClick(square) {
-    if (dragInProgress) return;   // end of a drag, ignore
-    if (!canMove())     return;
-
-    var clickedPiece = chess.get(square);
-
-    // ── Case 1: a piece is already selected ──
-    if (selectedSquare !== null) {
-
-      // Clicked the same square → deselect
-      if (square === selectedSquare) {
-        clearHighlights();
-        return;
-      }
-
-      // Clicked another own piece → re-select it
-      if (clickedPiece && clickedPiece.color === activeColor()) {
-        selectSquare(square);
-        return;
-      }
-
-      // Otherwise try to move there
-      var legalNow = chess.moves({ square: selectedSquare, verbose: true });
-      var legal    = legalNow.some(function(m) { return m.to === square; });
-
-      var from = selectedSquare;
-      clearHighlights();   // clear before doMove so state is clean
-
-      if (legal) {
-        doMove(from, square);   // promotion picker handled inside doMove
-      }
-      // if illegal, just deselect (clearHighlights already called)
-      return;
-    }
-
-    // ── Case 2: nothing selected yet ──
-    if (!clickedPiece || clickedPiece.color !== activeColor()) return;
-    selectSquare(square);
-  }
-
   // ── Board init ───────────────────────────────────────────────
   var board = Chessboard('board', {
-    draggable:     true,
-    position:      'start',
-    orientation:   MODE === 'bot' ? MY_COLOR : 'white',
-    pieceTheme:    pieceTheme,
-    onDragStart:   onDragStart,
-    onDrop:        onDrop,
-    onSnapEnd:     onSnapEnd,
-    onSquareClick: onSquareClick,
+    draggable:   true,
+    position:    'start',
+    orientation: MODE === 'bot' ? MY_COLOR : 'white',
+    pieceTheme:  pieceTheme,
+
+    onDragStart: function(source, piece) {
+      // ONLY allow dragging user pieces during user's turn
+      if (!canMove()) return false;  // No moves if game over, bot thinking, or not user's turn
+      if (piece[0] !== activeColor()) return false;  // Wrong color
+      if (!enableDragMove) return false;  // User disabled drag in settings
+      isDragging = true;  // ← Mark drag in progress
+      selectSquare(source);
+      return true;
+    },
+
+    onDrop: function(source, target) {
+      isDragging = false;  // ← Mark drag complete
+      clearHighlights();
+      if (source === target) return 'snapback';
+
+      if (isPromoMove(source, target)) {
+        var movingColor = chess.get(source).color;
+        pickPromotion(movingColor).then(function(chosen) {
+          var ok = doMove(source, target, chosen);
+          if (!ok) board.position(chess.fen());
+        });
+        return 'snapback';
+      }
+
+      var ok = doMove(source, target, undefined);
+      if (!ok) return 'snapback';
+    },
+
+    onSnapEnd: function() {
+      isDragging = false;  // ← Ensure drag is marked complete
+      board.position(chess.fen());
+    },
   });
+
+  // ── Click-to-move is now handled in Settings section above ──
 
   function resizeBoard() {
     var wrapper = document.querySelector('.board-wrapper');
@@ -487,10 +618,20 @@
       if (move) {
         board.position(chess.fen());
         appendMove(move.san);
+        // Handle dialogue: event-based interrupts take priority. If no event
+        // fired (or that event's lines are exhausted), fall back to the
+        // scheduled default story line. Bot-move counter always advances.
+        var eventHandled = false;
+        if (data.event && data.event !== 'default' && data.event !== 'greeting') {
+          eventHandled = showEventDialogue(data.event);
+        }
+        botMoveCount++;
+        if (!eventHandled) {
+          maybeShowDefaultLine();
+        }
         checkGameOver();
         if (!chess.game_over()) setStatus('Your turn');
       }
-      if (data.dialogue) addChat(data.dialogue);
     })
     .catch(function() {
       botThinking = false;
@@ -521,20 +662,27 @@
 
   function checkGameOver() {
     if (!chess.game_over()) return;
-    var title, body, result;
+    var title, body, result, botWon;
     if (chess.in_checkmate()) {
       var winner = chess.turn() === 'w' ? 'Black' : 'White';
       title  = 'Checkmate — ' + winner + ' wins!';
       body   = 'The king has fallen.';
       result = chess.turn() === 'w' ? '0-1' : '1-0';
+      // Bot won if the winner's color is NOT the player's color
+      botWon = (winner.toLowerCase() !== MY_COLOR);
     } else if (chess.in_draw()) {
       title  = 'Draw';
       body   = chess.in_stalemate()          ? 'Stalemate.'
              : chess.insufficient_material() ? 'Insufficient material.'
              :                                 'Draw by repetition.';
       result = '1/2-1/2';
+      botWon = false;
     }
-    if (title) showModal(title, body, result);
+    if (title) {
+      // Show end dialogue immediately, modal after 5 seconds
+      if (MODE === 'bot') showEndDialogue(botWon);
+      setTimeout(function() { showModal(title, body, result); }, 5000);
+    }
   }
 
   function showModal(title, body, result) {
@@ -571,6 +719,182 @@
     window.location.reload();
   };
 
+  // ── Settings ─────────────────────────────────────────────────
+  // NOTE: Movement style (drag vs click) only applies to USER input.
+  // Bot moves are ALWAYS handled via the /api/move endpoint and are unaffected.
+  var gameSettings = {
+    boardTheme: localStorage.getItem('chess_board_theme') || 'classic',
+    movementStyle: localStorage.getItem('chess_movement_style') || 'both',
+    highlightMoves: localStorage.getItem('chess_highlight_moves') !== 'false',
+    flipBoard: localStorage.getItem('chess_flip_board') === 'true',
+    soundEnabled: localStorage.getItem('chess_sound_enabled') !== 'false',
+  };
+
+  var enableClickToMove = true;
+  var enableDragMove = true;
+
+  function updateMovementStyle() {
+    try {
+      var style = gameSettings.movementStyle;
+      enableDragMove = (style === 'drag' || style === 'both');
+      enableClickToMove = (style === 'click' || style === 'both');
+      // Note: movement style only controls user input methods (drag vs click)
+      // Bot moves are unaffected and handled via API
+    } catch(e) {
+      console.warn('Could not update movement style:', e);
+    }
+  }
+
+  function applyBoardTheme() {
+    var boardEl = document.getElementById('board');
+    if (boardEl) boardEl.setAttribute('data-board-theme', gameSettings.boardTheme);
+  }
+
+  function loadSettings() {
+    document.getElementById('board-theme').value = gameSettings.boardTheme;
+    document.getElementById('movement-style').value = gameSettings.movementStyle;
+    document.getElementById('highlight-moves').checked = gameSettings.highlightMoves;
+    document.getElementById('flip-board').checked = gameSettings.flipBoard;
+    document.getElementById('sound-enabled').checked = gameSettings.soundEnabled;
+  }
+
+  function saveSettings() {
+    gameSettings.boardTheme = document.getElementById('board-theme').value;
+    gameSettings.movementStyle = document.getElementById('movement-style').value;
+    gameSettings.highlightMoves = document.getElementById('highlight-moves').checked;
+    gameSettings.flipBoard = document.getElementById('flip-board').checked;
+    gameSettings.soundEnabled = document.getElementById('sound-enabled').checked;
+
+    localStorage.setItem('chess_board_theme', gameSettings.boardTheme);
+    localStorage.setItem('chess_movement_style', gameSettings.movementStyle);
+    localStorage.setItem('chess_highlight_moves', gameSettings.highlightMoves);
+    localStorage.setItem('chess_flip_board', gameSettings.flipBoard);
+    localStorage.setItem('chess_sound_enabled', gameSettings.soundEnabled);
+
+    updateMovementStyle();
+    applyBoardFlip();
+    applyBoardTheme();
+  }
+
+  function applyBoardFlip() {
+    try {
+      var orientation = gameSettings.flipBoard ? 
+        (MODE === 'bot' ? (MY_COLOR === 'white' ? 'black' : 'white') : 'black') : 
+        (MODE === 'bot' ? MY_COLOR : 'white');
+      if (board && board.orientation) {
+        board.orientation(orientation);
+      }
+    } catch(e) {
+      console.warn('Could not flip board:', e);
+    }
+  }
+
+  document.getElementById('btn-settings').onclick = function() {
+    loadSettings();
+    document.getElementById('settings-modal').style.display = 'flex';
+  };
+
+  document.getElementById('settings-close').onclick = function() {
+    saveSettings();
+    document.getElementById('settings-modal').style.display = 'none';
+  };
+
+  document.getElementById('settings-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+      saveSettings();
+      this.style.display = 'none';
+    }
+  });
+
+  document.getElementById('movement-style').addEventListener('change', function() {
+    gameSettings.movementStyle = this.value;
+    updateMovementStyle();
+  });
+
+  document.getElementById('highlight-moves').addEventListener('change', function() {
+    gameSettings.highlightMoves = this.checked;
+  });
+
+  document.getElementById('flip-board').addEventListener('change', function() {
+    gameSettings.flipBoard = this.checked;
+    applyBoardFlip();
+  });
+
+  // Apply initial settings
+  updateMovementStyle();
+  applyBoardTheme();
+  if (gameSettings.flipBoard) applyBoardFlip();
+
+  document.getElementById('board-theme').addEventListener('change', function() {
+    gameSettings.boardTheme = this.value;
+    applyBoardTheme();
+  });
+
+  // Modify click-to-move handler to respect enableClickToMove
+  var originalClickHandler = null;
+  (function wrapClickToMove() {
+    var boardEl = document.getElementById('board');
+    var startX, startY;
+
+    boardEl.addEventListener('pointerdown', function(e) {
+      startX = e.clientX;
+      startY = e.clientY;
+    });
+
+    boardEl.addEventListener('pointerup', function(e) {
+      if (!enableClickToMove || isDragging) return;
+      
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
+      if (Math.sqrt(dx*dx + dy*dy) > 6) return;
+
+      if (!canMove()) return;
+
+      var boardRect = boardEl.getBoundingClientRect();
+      var x = e.clientX - boardRect.left;
+      var y = e.clientY - boardRect.top;
+      var sq = pixelToSquare(x, y, boardRect.width, boardRect.height);
+      if (!sq) return;
+
+      var clickedPiece = chess.get(sq);
+
+      if (selectedSquare !== null) {
+        if (sq === selectedSquare) { clearHighlights(); return; }
+
+        if (clickedPiece && clickedPiece.color === activeColor()) {
+          selectSquare(sq);
+          return;
+        }
+
+        var legal = chess.moves({ square: selectedSquare, verbose: true })
+                        .some(function(m) { return m.to === sq; });
+        var from = selectedSquare;
+        clearHighlights();
+        if (legal) doMove(from, sq);
+        return;
+      }
+
+      if (!clickedPiece || clickedPiece.color !== activeColor()) return;
+      selectSquare(sq);
+    });
+
+    function pixelToSquare(x, y, boardW, boardH) {
+      var squareW = boardW / 8;
+      var squareH = boardH / 8;
+      var col = Math.floor(x / squareW);
+      var row = Math.floor(y / squareH);
+      if (col < 0 || col > 7 || row < 0 || row > 7) return null;
+
+      var files = ['a','b','c','d','e','f','g','h'];
+      var isFlipped = gameSettings.flipBoard ? 
+        !(MODE === 'bot' && MY_COLOR === 'black') : 
+        (MODE === 'bot' && MY_COLOR === 'black');
+      var file = isFlipped ? files[7 - col] : files[col];
+      var rank = isFlipped ? (row + 1) : (8 - row);
+      return file + rank;
+    }
+  })();
+
   // ── Start ────────────────────────────────────────────────────
   if (MODE === 'bot' && BOT_ID) {
     fetch('/api/bots')
@@ -582,6 +906,7 @@
           document.getElementById('bot-name').textContent   = bot.name;
         }
       });
+    loadBotDialogue();
     if (MY_COLOR === 'black') {
       botThinking = true;
       setStatus('Bot is thinking...');

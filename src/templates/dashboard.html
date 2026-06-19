@@ -12,7 +12,7 @@
     <div class="mode-card">
       <h2>Pass &amp; Play</h2>
       <p>Two players, one board. Take turns on the same device.</p>
-      <a href="{{ url_for('game.play', mode='pass_and_play') }}" class="btn-primary">Play Now</a>
+      <a href="{{ url_for('game.play_passandplay') }}" class="btn-primary">Play Now</a>
     </div>
 
     <div class="mode-card">
@@ -43,7 +43,7 @@
           <td>{{ game.mode.replace('_', ' ').title() }}</td>
           <td>{{ game.bot_name or '—' }}</td>
           <td class="result result-{{ game.result }}">{{ game.result }}</td>
-          <td><a href="{{ url_for('game.replay', game_id=game.id) }}">Replay</a></td>
+          <td><a href="{{ url_for('game.replay', token=game.token) }}">Replay</a></td>
         </tr>
         {% endfor %}
       </tbody>
@@ -66,11 +66,21 @@
           <p class="bot-elo">Elo ~${bot.elo}</p>
           <p class="bot-desc">${bot.description}</p>
           <div class="bot-actions">
-            <a href="/play?mode=bot&bot=${bot.id}&color=white" class="btn-sm">White</a>
-            <a href="/play?mode=bot&bot=${bot.id}&color=black" class="btn-sm btn-outline">Black</a>
+            <button class="btn-sm"        onclick="startGame('${bot.id}','white')">White</button>
+            <button class="btn-sm btn-outline" onclick="startGame('${bot.id}','black')">Black</button>
           </div>
         </div>
       `).join('');
     });
+
+  function startGame(botId, color) {
+    fetch('/api/play_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode: 'bot', bot: botId, color: color }),
+    })
+    .then(r => r.json())
+    .then(d => { window.location.href = '/play/' + d.token; });
+  }
 </script>
 {% endblock %}

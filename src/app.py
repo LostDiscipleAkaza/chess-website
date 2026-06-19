@@ -1,6 +1,7 @@
 from flask import Flask
 from extensions import db, login_manager
 import os
+import requests
 
 
 

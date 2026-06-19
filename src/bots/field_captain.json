@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "I've commanded men in battles across the realm.",
+    "Show me whether you're worthy of standing among them."
+  ],
+
+  "blunder": [
+    "Impressive. You somehow launched a successful offensive against yourself.",
+    "Somewhere in your army, a pawn is wondering if desertion is an option.",
+    "If bad decisions generated tax revenue, the kingdom would never need another captain."
+  ],
+
+  "check": [
+    "Check. A battlefield mistake has finally reached your king."
+  ],
+
+  "capture": [
+    "The battlefield strips away pride. And apparently pieces."
+  ],
+
+  "promotion": [
+    "Another queen. Shame the rest of your position didn't get promoted too."
+  ],
+
+  "default": [
+    "I once served under a legendary knight.",
+    "He taught me that courage isn't fearlessness.",
+    "It's moving forward despite fear.",
+    "Many soldiers seek glory.",
+    "Few understand sacrifice.",
+    "The battlefield strips away pride quickly.",
+    "What's left is who you truly are.",
+    "That's the warrior that matters."
+  ],
+
+  "victory": [
+    "Ambition carried you here. It won't carry you further.",
+    "I've watched squirrels lose fights against their own reflections with more dignity."
+  ],
+
+  "defeat": [
+    "Excellent. I can see why you've come this far.",
+    "The kingdom may have a place for you yet."
+  ]
+}

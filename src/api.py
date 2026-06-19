@@ -13,8 +13,23 @@ import chess
 import chess.pgn
 import io
 import os
+import secrets
+import requests
 
 api_bp = Blueprint('api', __name__)
+
+
+@api_bp.route('/play_token', methods=['POST'])
+@login_required
+def play_token():
+    from play_sessions import _play_tokens
+    data  = request.get_json(force=True)
+    mode  = data.get('mode', 'bot')
+    bot   = data.get('bot', '')
+    color = data.get('color', 'white')
+    token = secrets.token_urlsafe(8)
+    _play_tokens[token] = {'mode': mode, 'bot': bot, 'color': color}
+    return jsonify({'token': token})
 
 STOCKFISH_PATH = os.environ.get( 'STOCKFISH_PATH', 'stockfish')  # Default to 'stockfish' in PATH
 
@@ -23,7 +38,7 @@ STOCKFISH_PATH = os.environ.get( 'STOCKFISH_PATH', 'stockfish')  # Default to 's
 def bot_move():
     data = request.get_json(force=True)
     fen = data.get('fen')
-    bot_id = data.get('bot_id', 'balanced_bob')
+    bot_id = data.get('bot_id', 'recruit')
     prev_fen = data.get('prev_fen')
 
     if not fen:
@@ -34,12 +49,15 @@ def bot_move():
     except ValueError:
         return jsonify({'error': 'invalid FEN'}), 400
 
-    event = detect_event(prev_fen, fen, bot_id)
-
     try:
         bot_uci, new_fen = get_bot_move(fen, bot_id)
     except Exception as e:
         return jsonify({'error': f'Engine failed: {str(e)}'}), 500
+
+    # Detect event from the bot's OWN move (fen -> new_fen), not the
+    # player's prior move. This ensures promotion/capture/check dialogue
+    # reacts to what the bot itself just did.
+    event = detect_event(fen, new_fen, bot_id)
 
     line = get_dialogue_line(bot_id, event)
 
@@ -53,7 +71,6 @@ def bot_move():
 
 @api_bp.route('/review', methods=['POST'])
 def review_game():
-    import requests as req
     data = request.get_json(force=True)
     pgn_str = data.get('pgn', '')
     player_color = data.get('player_color', 'white')
@@ -75,16 +92,16 @@ def review_game():
     board = game.board()
     move_num = 1
 
+    # Evaluate the starting position once, then reuse each eval as the
+    # next move's cp_before — halves the number of API calls.
+    cp_before = _eval_via_api(board.fen())
+
     for move in game.mainline_moves():
         color = 'white' if board.turn == chess.WHITE else 'black'
-        fen_before = board.fen()
         san = board.san(move)
         board.push(move)
         fen_after = board.fen()
 
-        # Evaluate before
-        cp_before = _eval_via_api(fen_before)
-        # Evaluate after
         cp_after = _eval_via_api(fen_after)
 
         if cp_before is not None and cp_after is not None:
@@ -116,6 +133,9 @@ def review_game():
             black_classifications.append((classification, symbol, color_hex))
             move_num += 1
 
+        # Reuse this eval as the next move's starting point
+        cp_before = cp_after
+
     white_profile = build_style_profile(white_classifications, len(white_classifications))
     black_profile = build_style_profile(black_classifications, len(black_classifications))
 
@@ -130,7 +150,7 @@ def review_game():
 def _eval_via_api(fen: str):
     """Evaluate a position using chess-api.com. Returns centipawns or None."""
     try:
-        resp = requests.post('https://chess-api.com/v1', json={'fen': fen, 'depth': 12}, timeout=10)
+        resp = requests.post('https://chess-api.com/v1', json={'fen': fen, 'depth': 8}, timeout=10)
         resp.raise_for_status()
         d = resp.json()
         if d.get('mate') is not None:
@@ -176,7 +196,7 @@ def save_game():
     except Exception:
         rating_info = {}
 
-    return jsonify({'status': 'saved', 'game_id': game.id, **rating_info})
+    return jsonify({'status': 'saved', 'game_id': game.id, 'token': game.token, **rating_info})
 
 
 @api_bp.route('/history', methods=['GET'])
@@ -192,3 +212,18 @@ def game_history():
 def list_bots():
     from dialogue import BOTS_MANIFEST
     return jsonify(BOTS_MANIFEST)
+
+
+@api_bp.route('/bot_dialogue/<bot_id>', methods=['GET'])
+def bot_dialogue(bot_id):
+    """Return the full dialogue JSON for a bot so the frontend can manage sequencing."""
+    import json, os
+    bots_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bots')
+    path = os.path.join(bots_dir, f'{bot_id}.json')
+    if not os.path.exists(path):
+        path = os.path.join(bots_dir, 'recruit.json')
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

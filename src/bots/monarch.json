@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "You've climbed higher than most ever will.",
+    "Now stand before the throne and prove your worth."
+  ],
+
+  "blunder": [
+    "You sought a crown and somehow misplaced your entire army along the way.",
+    "I've seen kingdoms survive plagues more gracefully than this position.",
+    "If this were a royal trial, the executioner would've finished early and gone home."
+  ],
+
+  "check": [
+    "Check. The throne grows further away with every mistake."
+  ],
+
+  "capture": [
+    "A ruler must protect his kingdom. You seem to be auctioning yours away."
+  ],
+
+  "promotion": [
+    "Another queen. Even she looks concerned."
+  ],
+
+  "default": [
+    "Long ago, I stood where you stand now.",
+    "I defeated my predecessors and claimed the crown.",
+    "I thought it was the end of my journey.",
+    "It was only the beginning.",
+    "Every decision affects thousands.",
+    "Every mistake echoes through generations.",
+    "The crown is not a reward.",
+    "It is a responsibility."
+  ],
+
+  "victory": [
+    "A crown is heavier than it appears. You are not ready to carry it.",
+    "The royal court has officially classified your performance as an agricultural accident."
+  ],
+
+  "defeat": [
+    "Then the kingdom is yours.",
+    "Rule wisely, my successor."
+  ]
+}

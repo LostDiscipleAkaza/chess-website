@@ -1,0 +1,45 @@
+{
+  "greeting": [
+    "Every army in the kingdom answers to me.",
+    "Show me the mind that seeks the throne."
+  ],
+
+  "blunder": [
+    "Historians will spend centuries debating whether that move was sabotage.",
+    "I've lost fewer soldiers in twenty years of war than you've lost pieces in this match.",
+    "Your position is collapsing so efficiently that I suspect it was planned."
+  ],
+
+  "check": [
+    "Check. Wars have ended from smaller mistakes."
+  ],
+
+  "capture": [
+    "Another casualty. Your campaign is not going well."
+  ],
+
+  "promotion": [
+    "A promotion. Unfortunately, it arrived too late to save the army."
+  ],
+
+  "default": [
+    "Once, I dreamed of becoming Monarch.",
+    "Then I stood beside one.",
+    "I learned that ruling is a burden greater than war.",
+    "So I chose another path.",
+    "I became the shield of the kingdom instead.",
+    "Some victories are won on battlefields.",
+    "Others are won by knowing what you truly want.",
+    "That lesson took me decades."
+  ],
+
+  "victory": [
+    "You may be a warrior. But you are not yet a ruler.",
+    "If incompetence were a military formation, you'd be carrying its banner."
+  ],
+
+  "defeat": [
+    "Remarkable.",
+    "The throne awaits you."
+  ]
+}

@@ -17,7 +17,7 @@
         <td>{{ game.bot_name or '—' }}</td>
         <td>{{ game.player_color.title() }}</td>
         <td class="result result-{{ game.result }}">{{ game.result }}</td>
-        <td><a href="{{ url_for('game.replay', game_id=game.id) }}">Replay</a></td>
+        <td><a href="{{ url_for('game.replay', token=game.token) }}">Replay</a></td>
       </tr>
       {% endfor %}
     </tbody>

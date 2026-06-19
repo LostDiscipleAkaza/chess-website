@@ -1,0 +1,40 @@
+{
+  "greeting": [
+    "Hi, I'm a newly recruited soldier. I always dreamed of becoming a Royal Knight. I hope you surpass me and reach your destination."
+  ],
+
+  "blunder": [
+    "Wait... you saw that piece was defended and still played that move? That's not confidence. That's assisted suicide.",
+    "My village cow once charged a tree because it thought it was another cow. That was a more calculated decision.",
+    "If mistakes were military achievements, you'd already outrank the Monarch."
+  ],
+
+  "check": [
+    "Check. Even a recruit can see that your king is in danger."
+  ],
+
+  "capture": [
+    "Thank you. I wasn't sure how I'd get that piece, but you solved the problem for me."
+  ],
+
+  "promotion": [
+    "A new queen already? At this rate I'll become a Royal Knight before you leave the training grounds."
+  ],
+
+  "default": [
+    "The soldiers back home always told me to keep practicing.",
+    "Maybe one day we'll both reach our dreams.",
+    "Every warrior starts somewhere.",
+    "I still have a long way to go."
+  ],
+
+  "victory": [
+    "The road ahead is filled with stronger warriors. If you can't beat a recruit, perhaps your journey ends here.",
+    "A chicken stole my lunch last week and somehow showed better tactical awareness than you."
+  ],
+
+  "defeat": [
+    "Well fought. Perhaps you'll reach the heights I never could.",
+    "Keep moving forward."
+  ]
+}

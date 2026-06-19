@@ -2,6 +2,7 @@ from extensions import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import secrets
 
 
 @login_manager.user_loader
@@ -35,6 +36,7 @@ class Game(db.Model):
     __tablename__ = 'games'
 
     id           = db.Column(db.Integer, primary_key=True)
+    token        = db.Column(db.String(16), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(8))
     user_id      = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     pgn          = db.Column(db.Text, nullable=False)
     result       = db.Column(db.String(10))
@@ -49,6 +51,7 @@ class Game(db.Model):
     def to_dict(self):
         return {
             'id':             self.id,
+            'token':          self.token,
             'pgn':            self.pgn,
             'result':         self.result,
             'mode':           self.mode,
