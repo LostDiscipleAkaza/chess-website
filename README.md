@@ -18,14 +18,17 @@ A web based chess app with pass & play mode and personality driven AI opponents 
 
 ## Bots
 
-| Bot | Elo | Style |
-|-----|-----|-------|
-| Rookie | ~400 | Just learning the game. |
-| Balanced | ~1200 | Solid and hard to trick. |
-| Aggressive | ~1800 | Attacks at every opportunity. |
-| Grandmaster | ~2400 | Ice cold, sees everything. |
+Bot	Elo	Style
+Recruit	~400	Ambitious soldier chasing impossible dreams.
+Guard	~700	Loyal protector of kingdom gates.
+Scout	~1000	Wisdom across squares.
+Squad Leader	~1300	Responsible leader.
+Field Captain	~1700	Veteran commander.
+Royal Knight	~2100	Hero of the kingdom.
+Grand Marshal	~2500	Supreme strategist.
+Monarch	~2800	Burdened King.
+Sovereign	~3100	The Creator.
 
----
 
 ## Built With
 
